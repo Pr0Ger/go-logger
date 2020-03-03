@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"time"
@@ -11,8 +10,6 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
-
-type contextKey struct{}
 
 func NewCore(debug bool) zapcore.Core {
 	var encoder zapcore.Encoder
@@ -30,15 +27,6 @@ func NewCore(debug bool) zapcore.Core {
 			return lvl < zapcore.ErrorLevel
 		})),
 	)
-}
-
-// GetLogEntry returns the in-context LogEntry for a request.
-func Ctx(ctx context.Context) *zap.Logger {
-	entry, ok := ctx.Value(contextKey{}).(*zap.Logger)
-	if !ok {
-		return zap.NewNop()
-	}
-	return entry
 }
 
 func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
@@ -66,7 +54,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 				)
 			}()
 
-			next.ServeHTTP(ww, r.WithContext(context.WithValue(r.Context(), contextKey{}, logger)))
+			next.ServeHTTP(ww, r.WithContext(WithLogger(r.Context(), logger)))
 		})
 	}
 }
