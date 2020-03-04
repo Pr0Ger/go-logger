@@ -26,13 +26,16 @@ func (s *sentryTransportMock) SendEvent(event *sentry.Event) {
 	s.Called(event)
 }
 
-func sentryHubMock(t *testing.T) *sentry.Hub {
+func sentryTransport() *sentryTransportMock {
 	transport := &sentryTransportMock{}
 	transport.On("Configure", mock.Anything).Return()
 	transport.On("Flush", mock.Anything).Return(true)
+	return transport
+}
 
+func sentryHubMock(t *testing.T) *sentry.Hub {
 	client, err := sentry.NewClient(sentry.ClientOptions{
-		Transport: transport,
+		Transport: sentryTransport(),
 	})
 	require.NoError(t, err)
 

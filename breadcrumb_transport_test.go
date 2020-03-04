@@ -16,9 +16,7 @@ type BreadcrumbTransportSuite struct {
 	suite.Suite
 
 	ts            *httptest.Server
-	hub           *sentry.Hub
 	sendEventMock *mock.Call
-	client        http.Client
 }
 
 func (suite *BreadcrumbTransportSuite) SetupSuite() {
@@ -32,23 +30,21 @@ func (suite *BreadcrumbTransportSuite) TearDownSuite() {
 }
 
 func (suite *BreadcrumbTransportSuite) SetupTest() {
-	suite.hub = sentryHubMock(suite.T())
-	transportMock := suite.hub.Client().Transport.(*sentryTransportMock)
-	suite.sendEventMock = transportMock.On("SendEvent", mock.AnythingOfType("*sentry.Event"))
+	transportMock := sentryTransport()
+	client, err := sentry.NewClient(sentry.ClientOptions{Transport: transportMock})
+	suite.NoError(err)
 
-	suite.client = http.Client{
-		Transport: NewBreadcrumbTransport(suite.hub, sentry.LevelDebug, nil),
-	}
+	sentry.CurrentHub().BindClient(client)
+	suite.sendEventMock = transportMock.On("SendEvent", mock.AnythingOfType("*sentry.Event"))
+}
+
+func (suite *BreadcrumbTransportSuite) TearDownTest() {
+	sentry.CurrentHub().Scope().ClearBreadcrumbs()
 }
 
 func (suite *BreadcrumbTransportSuite) TestNew() {
-	suite.T().Run("hub should be provided", func(t *testing.T) {
-		require.Panics(t, func() {
-			NewBreadcrumbTransport(nil, "", nil)
-		})
-	})
 	suite.T().Run("fallback to default transport", func(t *testing.T) {
-		transport := NewBreadcrumbTransport(suite.hub, sentry.LevelDebug, nil)
+		transport := NewBreadcrumbTransport(sentry.LevelDebug, nil)
 		require.Equal(t, transport.(*breadcrumbTransport).Transport, http.DefaultTransport)
 	})
 }
@@ -70,12 +66,16 @@ func (suite *BreadcrumbTransportSuite) TestRoundTripSuccess() {
 		suite.Assert().Equal(expectedData, breadcrumb.Data, "breadcrumb should have data about http request")
 	})
 
-	resp, err := suite.client.Get(suite.ts.URL)
+	client := http.Client{
+		Transport: NewBreadcrumbTransport(sentry.LevelDebug, nil),
+	}
+
+	resp, err := client.Get(suite.ts.URL)
 	suite.Require().NoError(err, "request should be success")
 	defer resp.Body.Close()
 
-	suite.hub.CaptureMessage("test event")
-	suite.hub.Flush(1 * time.Second)
+	sentry.CaptureMessage("test event")
+	sentry.Flush(1 * time.Second)
 }
 
 func (suite *BreadcrumbTransportSuite) TestRoundTripFailure() {
@@ -94,11 +94,15 @@ func (suite *BreadcrumbTransportSuite) TestRoundTripFailure() {
 		suite.Assert().Equal(expectedData, breadcrumb.Data, "breadcrumb should have data about http request")
 	})
 
-	_, err := suite.client.Get("http://127.0.0.1:21") //nolint:bodyclose
+	client := http.Client{
+		Transport: NewBreadcrumbTransport(sentry.LevelDebug, nil),
+	}
+
+	_, err := client.Get("http://127.0.0.1:21") // nolint:bodyclose
 	suite.Require().Error(err, "request should not be success")
 
-	suite.hub.CaptureMessage("test event")
-	suite.hub.Flush(1 * time.Second)
+	sentry.CaptureMessage("test event")
+	sentry.Flush(1 * time.Second)
 }
 
 func TestBreadcrumbTransport(t *testing.T) {

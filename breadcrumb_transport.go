@@ -8,21 +8,16 @@ import (
 )
 
 type breadcrumbTransport struct {
-	Hub   *sentry.Hub
 	Level sentry.Level
 
 	Transport http.RoundTripper
 }
 
-func NewBreadcrumbTransport(hub *sentry.Hub, level sentry.Level, transport http.RoundTripper) http.RoundTripper {
-	if hub == nil {
-		panic("hub should not be nil")
-	}
+func NewBreadcrumbTransport(level sentry.Level, transport http.RoundTripper) http.RoundTripper {
 	if transport == nil {
 		transport = http.DefaultTransport
 	}
 	return &breadcrumbTransport{
-		Hub:       hub,
 		Level:     level,
 		Transport: transport,
 	}
@@ -35,7 +30,7 @@ func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error
 			BreadcrumbDataMethod: req.Method,
 		},
 		Level:     b.Level,
-		Timestamp: time.Now().UTC().Unix(),
+		Timestamp: time.Now().Unix(),
 		Type:      BreadcrumbTypeHTTP,
 	}
 
@@ -48,7 +43,7 @@ func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error
 		breadcrumb.Message = err.Error()
 	}
 
-	b.Hub.AddBreadcrumb(&breadcrumb, nil)
+	Hub(req.Context()).AddBreadcrumb(&breadcrumb, nil)
 
 	return resp, err
 }
