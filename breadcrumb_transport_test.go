@@ -1,22 +1,28 @@
 package logger
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/stretchr/testify/mock"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
 
+//go:generate mockgen -package logger -destination mock_sentry_test.go github.com/getsentry/sentry-go Transport
+
 type BreadcrumbTransportSuite struct {
 	suite.Suite
 
-	ts            *httptest.Server
-	sendEventMock *mock.Call
+	ctrl *gomock.Controller
+	ts   *httptest.Server
+
+	hub           *sentry.Hub
+	sendEventMock *gomock.Call
 }
 
 func (suite *BreadcrumbTransportSuite) SetupSuite() {
@@ -30,16 +36,28 @@ func (suite *BreadcrumbTransportSuite) TearDownSuite() {
 }
 
 func (suite *BreadcrumbTransportSuite) SetupTest() {
-	transportMock := sentryTransport()
+	suite.ctrl = gomock.NewController(suite.T())
+
+	transportMock := NewMockTransport(suite.ctrl)
+	transportMock.EXPECT().
+		Configure(gomock.AssignableToTypeOf(sentry.ClientOptions{})).
+		Return()
+	suite.sendEventMock = transportMock.EXPECT().
+		SendEvent(gomock.AssignableToTypeOf(&sentry.Event{})).
+		Return().
+		MinTimes(0)
+	transportMock.EXPECT().
+		Flush(gomock.Any()).
+		Return(true).
+		MinTimes(0)
+
 	client, err := sentry.NewClient(sentry.ClientOptions{Transport: transportMock})
 	suite.NoError(err)
-
-	sentry.CurrentHub().BindClient(client)
-	suite.sendEventMock = transportMock.On("SendEvent", mock.AnythingOfType("*sentry.Event"))
+	suite.hub = sentry.NewHub(client, sentry.NewScope())
 }
 
 func (suite *BreadcrumbTransportSuite) TearDownTest() {
-	sentry.CurrentHub().Scope().ClearBreadcrumbs()
+	suite.ctrl.Finish()
 }
 
 func (suite *BreadcrumbTransportSuite) TestNew() {
@@ -50,8 +68,7 @@ func (suite *BreadcrumbTransportSuite) TestNew() {
 }
 
 func (suite *BreadcrumbTransportSuite) TestRoundTripSuccess() {
-	suite.sendEventMock.Run(func(args mock.Arguments) {
-		event := args.Get(0).(*sentry.Event)
+	suite.sendEventMock.Do(func(event *sentry.Event) {
 		suite.Require().Len(event.Breadcrumbs, 1, "event should have one breadcrumb")
 
 		breadcrumb := event.Breadcrumbs[0]
@@ -64,23 +81,26 @@ func (suite *BreadcrumbTransportSuite) TestRoundTripSuccess() {
 			BreadcrumbDataURL:        suite.ts.URL,
 		}
 		suite.Assert().Equal(expectedData, breadcrumb.Data, "breadcrumb should have data about http request")
-	})
+	}).MinTimes(1)
 
 	client := http.Client{
 		Transport: NewBreadcrumbTransport(sentry.LevelDebug, nil),
 	}
 
-	resp, err := client.Get(suite.ts.URL)
+	ctx := WithHub(context.Background(), suite.hub)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, suite.ts.URL, nil)
+	suite.Require().NoError(err)
+
+	resp, err := client.Do(req)
 	suite.Require().NoError(err, "request should be success")
 	defer resp.Body.Close()
 
-	sentry.CaptureMessage("test event")
-	sentry.Flush(1 * time.Second)
+	suite.hub.CaptureMessage("test event")
+	suite.hub.Flush(1 * time.Second)
 }
 
 func (suite *BreadcrumbTransportSuite) TestRoundTripFailure() {
-	suite.sendEventMock.Run(func(args mock.Arguments) {
-		event := args.Get(0).(*sentry.Event)
+	suite.sendEventMock.Do(func(event *sentry.Event) {
 		suite.Require().Len(event.Breadcrumbs, 1, "event should have one breadcrumb")
 
 		breadcrumb := event.Breadcrumbs[0]
@@ -92,17 +112,21 @@ func (suite *BreadcrumbTransportSuite) TestRoundTripFailure() {
 			BreadcrumbDataURL:    "http://127.0.0.1:21",
 		}
 		suite.Assert().Equal(expectedData, breadcrumb.Data, "breadcrumb should have data about http request")
-	})
+	}).MinTimes(1)
 
 	client := http.Client{
 		Transport: NewBreadcrumbTransport(sentry.LevelDebug, nil),
 	}
 
-	_, err := client.Get("http://127.0.0.1:21") // nolint:bodyclose
+	ctx := WithHub(context.Background(), suite.hub)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:21", nil)
+	suite.Require().NoError(err)
+
+	_, err = client.Do(req) // nolint:bodyclose
 	suite.Require().Error(err, "request should not be success")
 
-	sentry.CaptureMessage("test event")
-	sentry.Flush(1 * time.Second)
+	suite.hub.CaptureMessage("test event")
+	suite.hub.Flush(1 * time.Second)
 }
 
 func TestBreadcrumbTransport(t *testing.T) {
