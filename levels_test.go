@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"math"
 	"strings"
 	"testing"
 
@@ -21,6 +22,7 @@ func TestSentryLevel(t *testing.T) {
 		{zapcore.DPanicLevel, sentry.LevelError},
 		{zapcore.PanicLevel, sentry.LevelFatal},
 		{zapcore.FatalLevel, sentry.LevelFatal},
+		{zapcore.Level(math.MaxInt8), sentry.LevelDebug},
 	}
 
 	for _, tt := range tests {
