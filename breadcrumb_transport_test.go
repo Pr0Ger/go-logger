@@ -13,8 +13,6 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-//go:generate mockgen -package logger -destination mock_sentry_test.go github.com/getsentry/sentry-go Transport
-
 type BreadcrumbTransportSuite struct {
 	suite.Suite
 

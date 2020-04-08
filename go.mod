@@ -5,7 +5,9 @@ go 1.12
 require (
 	github.com/getsentry/sentry-go v0.4.0
 	github.com/go-chi/chi v4.0.3+incompatible
+	github.com/golang/mock v1.4.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.4.0
+	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
 )
