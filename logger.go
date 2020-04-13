@@ -32,9 +32,9 @@ func NewCore(debug bool) zapcore.Core {
 func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 	core := logger.Core()
 	rootHub := sentry.CurrentHub()
-	if wrappedCore, ok := core.(SentryCoreWrapper); ok {
-		core = wrappedCore.localCore
-		rootHub = wrappedCore.sentryCore.hub
+	if wrappedCore, ok := core.(sentryCoreWrapper); ok {
+		core = wrappedCore.LocalCore()
+		rootHub = wrappedCore.SentryCore().hub
 	}
 
 	return func(next http.Handler) http.Handler {
