@@ -6,6 +6,7 @@ steps:
 - name: lint
   image: golangci/golangci-lint:v1.24-alpine
   commands:
+  - go get github.com/golang/mock/mockgen@latest
   - go generate -x
   - golangci-lint run -v
 
@@ -17,6 +18,7 @@ steps:
 - name: build
   image: "pr0ger/baseimage:build.go-1.13"
   commands:
+  - go get github.com/golang/mock/mockgen@latest
   - go generate -x
   - go build
   volumes:
