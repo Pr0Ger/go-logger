@@ -1,0 +1,33 @@
+---
+kind: pipeline
+name: lint
+type: docker
+steps:
+- name: lint
+  image: golangci/golangci-lint:v1.24-alpine
+  commands:
+  - golangci-lint run -v
+
+---
+kind: pipeline
+name: tests 1.13
+type: docker
+steps:
+- name: build
+  image: "pr0ger/baseimage:build.go-1.13"
+  commands:
+  - go build
+  volumes:
+  - name: deps
+    path: /go
+- name: test
+  image: "pr0ger/baseimage:build.go-1.13"
+  commands:
+  - go test -v ./...
+  volumes:
+  - name: deps
+    path: /go
+
+volumes:
+- name: deps
+  temp: {}
