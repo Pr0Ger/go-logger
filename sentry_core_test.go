@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -19,7 +20,8 @@ type SentryCoreSuite struct {
 	ctrl *gomock.Controller
 
 	hub           *sentry.Hub
-	sendEventMock *gomock.Call
+	sendEventMock func() *gomock.Call
+	flushMock     *gomock.Call
 }
 
 func (suite *SentryCoreSuite) SetupTest() {
@@ -29,11 +31,12 @@ func (suite *SentryCoreSuite) SetupTest() {
 	transportMock.EXPECT().
 		Configure(gomock.AssignableToTypeOf(sentry.ClientOptions{})).
 		Return()
-	suite.sendEventMock = transportMock.EXPECT().
-		SendEvent(gomock.AssignableToTypeOf(&sentry.Event{})).
-		Return().
-		MinTimes(0)
-	transportMock.EXPECT().
+	suite.sendEventMock = func() *gomock.Call {
+		return transportMock.EXPECT().
+			SendEvent(gomock.AssignableToTypeOf(&sentry.Event{})).
+			Return()
+	}
+	suite.flushMock = transportMock.EXPECT().
 		Flush(gomock.Any()).
 		Return(true).
 		MinTimes(0)
@@ -82,14 +85,14 @@ func (suite *SentryCoreSuite) TestNew() {
 }
 
 func (suite *SentryCoreSuite) TestWriteLevelStoreBreadcrumbMessage() {
-	suite.sendEventMock.Do(func(event *sentry.Event) {
+	suite.sendEventMock().Do(func(event *sentry.Event) {
 		suite.Require().Len(event.Breadcrumbs, 1, "event should have one breadcrumb")
 
 		breadcrumb := event.Breadcrumbs[0]
 		suite.Assert().Equal(BreadcrumbTypeDefault, breadcrumb.Type)
 		suite.Assert().Equal(sentry.LevelDebug, breadcrumb.Level)
 		suite.Assert().Equal("test", breadcrumb.Message)
-	}).MinTimes(1)
+	})
 
 	core := NewSentryCore(suite.hub)
 	logger := zap.New(core)
@@ -100,27 +103,37 @@ func (suite *SentryCoreSuite) TestWriteLevelStoreBreadcrumbMessage() {
 	suite.hub.Flush(1 * time.Second)
 }
 
-func (suite *SentryCoreSuite) TestWriteLevelStoreFieldForEvents() {
-	suite.sendEventMock.Do(func(event *sentry.Event) {
-		suite.Require().Len(event.Extra, 2)
-	}).MinTimes(1)
+func (suite *SentryCoreSuite) TestWriteLevelSkipTooVerboseMessages() {
+	suite.sendEventMock().Do(func(event *sentry.Event) {
+		suite.Require().Len(event.Breadcrumbs, 0, "event should not have breadcrumbs")
+	})
 
-	core := NewSentryCore(suite.hub)
-	logger := zap.New(core).With(zap.Int("global", 1))
+	core := NewSentryCore(suite.hub, BreadcrumbLevel(zap.InfoLevel))
+	logger := zap.New(core)
 
-	logger.Error("event", zap.Int("local", 1))
+	logger.Debug("test")
+
+	suite.hub.CaptureMessage("test event")
+	suite.hub.Flush(1 * time.Second)
 }
 
-func (suite *SentryCoreSuite) TestWriteLevelFieldForwarding() {
-	suite.sendEventMock.Do(func(event *sentry.Event) {
+func (suite *SentryCoreSuite) TestWriteLevelFieldStoreExtraTags() {
+	suite.sendEventMock().Do(func(event *sentry.Event) {
+		suite.Equal("test event", event.Message)
+		suite.Equal(map[string]interface{}{
+			"global":    int64(1),
+			"event tag": int64(3),
+		}, event.Extra)
+
 		suite.Require().Len(event.Breadcrumbs, 2, "event should have 2 breadcrumbs")
+
 		suite.Equal("event without extra tags", event.Breadcrumbs[0].Message)
 		suite.Len(event.Breadcrumbs[0].Data, 0)
 
 		suite.Equal("event with extra tag", event.Breadcrumbs[1].Message)
 		suite.Require().Len(event.Breadcrumbs[1].Data, 1)
 		suite.EqualValues(2, event.Breadcrumbs[1].Data["tag"])
-	}).MinTimes(1)
+	})
 
 	core := NewSentryCore(suite.hub)
 	logger := zap.New(core).With(zap.Int("global", 1))
@@ -128,31 +141,75 @@ func (suite *SentryCoreSuite) TestWriteLevelFieldForwarding() {
 	logger.Debug("event without extra tags")
 	logger.Debug("event with extra tag", zap.Int("tag", 2))
 
-	logger.Error("test event")
-	suite.hub.Flush(1 * time.Second)
-}
-
-func (suite *SentryCoreSuite) TestWriteLevelSkip() {
-	suite.sendEventMock.Do(func(event *sentry.Event) {
-		suite.Require().Len(event.Breadcrumbs, 0, "event should not have breadcrumbs")
-	})
-
-	core := &SentryCore{hub: suite.hub, BreadcrumbLevel: zap.InfoLevel, EventLevel: zap.InfoLevel}
-	logger := zap.New(core)
-
-	logger.Debug("test")
-
-	suite.hub.CaptureMessage("test event")
+	logger.Error("test event", zap.Int("event tag", 3))
 	suite.hub.Flush(1 * time.Second)
 }
 
 func (suite *SentryCoreSuite) TestWriteOnFatalLevelsTriggerSync() {
+	suite.sendEventMock()
+	suite.flushMock.MinTimes(1)
+
 	logger := zap.New(NewSentryCore(suite.hub))
 
 	suite.Panics(func() {
 		// panic is used because we can't override os.exit(1)
 		logger.Panic("panic msg")
 	})
+}
+
+func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
+	core := NewSentryCore(suite.hub)
+	logger := zap.New(core)
+
+	suite.sendEventMock().Do(func(event *sentry.Event) {
+		suite.Equal("test message with default stacktrace", event.Message)
+
+		suite.Len(event.Exception, 0)
+
+		suite.Require().Len(event.Threads, 1)
+		thread := event.Threads[0]
+		suite.Equal(false, thread.Crashed)
+		suite.Equal(true, thread.Current)
+		suite.Equal("current", thread.ID)
+		suite.NotNil(thread.Stacktrace)
+	})
+	logger.Error("test message with default stacktrace")
+
+	suite.sendEventMock().Do(func(event *sentry.Event) {
+		suite.Equal("message from panic", event.Message)
+
+		suite.Len(event.Exception, 0)
+
+		suite.Require().Len(event.Threads, 1)
+		thread := event.Threads[0]
+		suite.Equal(true, thread.Crashed)
+		suite.Equal(true, thread.Current)
+		suite.Equal("current", thread.ID)
+		suite.NotNil(thread.Stacktrace)
+	})
+	suite.Panics(func() {
+		logger.Panic("message from panic")
+	})
+
+	suite.sendEventMock().Do(func(event *sentry.Event) {
+		suite.Equal("error with exception", event.Message)
+
+		suite.Require().Len(event.Exception, 1)
+		suite.Require().Len(event.Threads, 1)
+
+		exception := event.Exception[0]
+		suite.T().Log(exception)
+		suite.Equal("*errors.errorString", exception.Type)
+		suite.Equal("error from pkg/errors", exception.Value)
+		suite.NotNil(exception.Stacktrace)
+
+		thread := event.Threads[0]
+		suite.Equal(false, thread.Crashed)
+		suite.Equal(true, thread.Current)
+		suite.Equal(exception.ThreadID, thread.ID)
+		suite.Nil(thread.Stacktrace)
+	})
+	logger.Error("error with exception", zap.Error(errors.New("error from pkg/errors")))
 }
 
 func TestSentryCore(t *testing.T) {

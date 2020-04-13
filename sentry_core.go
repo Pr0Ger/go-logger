@@ -36,13 +36,14 @@ func BreadcrumbLevel(level zapcore.Level) SentryCoreOption {
 func EventLevel(level zapcore.Level) SentryCoreOption {
 	return func(w *SentryCore) {
 		w.EventLevel = level
-		if level < w.BreadcrumbLevel {
-			w.BreadcrumbLevel = level
-		}
 	}
 }
 
 func NewSentryCore(hub *sentry.Hub, options ...SentryCoreOption) zapcore.Core {
+	if hub == nil {
+		panic("hub should not be nil")
+	}
+
 	core := &SentryCore{
 		hub:             hub,
 		scope:           hub.PushScope(),
@@ -95,32 +96,48 @@ func (s *SentryCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 
 	if ent.Level >= s.EventLevel {
 		event := sentry.NewEvent()
+		event.Level = SentryLevel(ent.Level)
 		event.Message = ent.Message
 		event.Extra = data.Fields
 
+		var stacktrace *sentry.Stacktrace
 		if errField != nil {
-			stacktrace := sentry.ExtractStacktrace(errField)
-			if stacktrace == nil {
-				stacktrace = sentry.NewStacktrace()
+			stacktrace = sentry.ExtractStacktrace(errField)
+		}
+		if stacktrace == nil {
+			stacktrace = sentry.NewStacktrace()
+		}
+		filteredFrames := make([]sentry.Frame, 0, len(stacktrace.Frames))
+		for _, frame := range stacktrace.Frames {
+			if strings.HasPrefix(frame.Module, "go.uber.org/zap") ||
+				strings.HasPrefix(frame.Function, "go.uber.org/zap") {
+				break
 			}
 
-			filteredFrames := make([]sentry.Frame, 0, len(stacktrace.Frames))
-			for _, frame := range stacktrace.Frames {
-				if strings.HasPrefix(frame.Module, "go.uber.org/zap") ||
-					strings.HasPrefix(frame.Module, "go.pr0ger.dev/logger") {
-					continue
-				}
+			filteredFrames = append(filteredFrames, frame)
+		}
+		stacktrace.Frames = filteredFrames
 
-				filteredFrames = append(filteredFrames, frame)
-			}
-			stacktrace.Frames = filteredFrames
-
+		if errField != nil {
 			cause := errors.Cause(errField)
 
 			event.Exception = []sentry.Exception{{
 				Value:      cause.Error(),
 				Type:       reflect.TypeOf(cause).String(),
+				ThreadID:   "current",
 				Stacktrace: stacktrace,
+			}}
+			event.Threads = []sentry.Thread{{
+				ID:      "current",
+				Current: true,
+				Crashed: ent.Level >= zapcore.DPanicLevel,
+			}}
+		} else {
+			event.Threads = []sentry.Thread{{
+				ID:         "current",
+				Stacktrace: stacktrace,
+				Current:    true,
+				Crashed:    ent.Level >= zapcore.DPanicLevel,
 			}}
 		}
 
