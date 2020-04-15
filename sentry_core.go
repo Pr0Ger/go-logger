@@ -10,6 +10,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+const (
+	defaultBreadcrumbLevel = zapcore.DebugLevel
+	defaultEventLevel      = zapcore.ErrorLevel
+)
+
 type SentryCore struct {
 	zapcore.LevelEnabler
 
@@ -47,8 +52,8 @@ func NewSentryCore(hub *sentry.Hub, options ...SentryCoreOption) zapcore.Core {
 	core := &SentryCore{
 		hub:             hub,
 		scope:           hub.PushScope(),
-		BreadcrumbLevel: zapcore.DebugLevel,
-		EventLevel:      zapcore.ErrorLevel,
+		BreadcrumbLevel: defaultBreadcrumbLevel,
+		EventLevel:      defaultEventLevel,
 	}
 
 	for _, option := range options {
