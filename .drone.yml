@@ -1,17 +1,5 @@
 ---
 kind: pipeline
-name: lint
-type: docker
-steps:
-- name: lint
-  image: golangci/golangci-lint:v1.24-alpine
-  commands:
-  - go get github.com/golang/mock/mockgen@latest
-  - go generate -x
-  - golangci-lint run -v
-
----
-kind: pipeline
 name: tests 1.13
 type: docker
 steps:
