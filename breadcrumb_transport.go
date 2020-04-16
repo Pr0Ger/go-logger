@@ -30,7 +30,7 @@ func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error
 			BreadcrumbDataMethod: req.Method,
 		},
 		Level:     b.Level,
-		Timestamp: time.Now().Unix(),
+		Timestamp: time.Now().UTC(),
 		Type:      BreadcrumbTypeHTTP,
 	}
 

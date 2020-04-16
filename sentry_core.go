@@ -153,7 +153,7 @@ func (s *SentryCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 		Data:      data.Fields,
 		Level:     SentryLevel(ent.Level),
 		Message:   ent.Message,
-		Timestamp: time.Now().Unix(),
+		Timestamp: time.Now().UTC(),
 		Type:      BreadcrumbTypeDefault,
 	}
 	s.hub.AddBreadcrumb(&breadcrumb, nil)
