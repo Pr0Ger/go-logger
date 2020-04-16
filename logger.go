@@ -48,7 +48,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 		if breadcrumbLevel := sentryCore.BreadcrumbLevel; breadcrumbLevel != defaultBreadcrumbLevel {
 			options = append(options, BreadcrumbLevel(breadcrumbLevel))
 		}
-		if eventLevel := sentryCore.BreadcrumbLevel; eventLevel != defaultEventLevel {
+		if eventLevel := sentryCore.EventLevel; eventLevel != defaultEventLevel {
 			options = append(options, EventLevel(eventLevel))
 		}
 	}
