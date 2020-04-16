@@ -71,7 +71,7 @@ func Example_web_server() {
 	// And create logger
 	logger := zap.New(core)
 
-	logger.Debug("this is event will be logged to stdout but will not appear in request breadcrumbs")
+	logger.Debug("this event will be logged to stdout but will not appear in request breadcrumbs")
 
 	// Create handler for network requests
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

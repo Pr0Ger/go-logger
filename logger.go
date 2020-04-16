@@ -72,7 +72,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 			t1 := time.Now()
 			defer func() {
-				logger.Debug("",
+				logger.Debug("-",
 					zap.Duration("duration", time.Since(t1)),
 					zap.Int("status", ww.Status()),
 					zap.Int("size", ww.BytesWritten()),
