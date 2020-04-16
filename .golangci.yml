@@ -26,9 +26,3 @@ linters-settings:
     exclude: .errcheck_excludes.txt
   lll:
     tab-width: 4
-
-issues:
-  exclude-rules:
-  - linters:
-    - govet
-    text: "tests: Example.*? refers to unknown identifier: .*"

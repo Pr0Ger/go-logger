@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func ExampleSimple() {
+func Example_simple() {
 	// This will not work without SENTRY_DSN environment variable
 	_ = sentry.Init(sentry.ClientOptions{
 		Transport: sentry.NewHTTPSyncTransport(),
@@ -25,7 +25,7 @@ func ExampleSimple() {
 	log.Error("and this message will attach stacktrace", zap.Error(errors.New("error from pkg/errors")))
 }
 
-func ExampleBreadcrumbTransport() {
+func Example_breadcrumb_transport() {
 	// This will not work without SENTRY_DSN environment variable
 	_ = sentry.Init(sentry.ClientOptions{
 		Transport: sentry.NewHTTPSyncTransport(),
@@ -55,7 +55,7 @@ func ExampleBreadcrumbTransport() {
 	// Either way it will contain full info about request in breadcrumb
 }
 
-func ExampleWebServer() {
+func Example_web_server() {
 	// This will not work without SENTRY_DSN environment variable
 	_ = sentry.Init(sentry.ClientOptions{
 		Transport: sentry.NewHTTPSyncTransport(),
