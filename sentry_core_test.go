@@ -1,12 +1,14 @@
 package logger
 
 import (
-	"errors"
+	stderrors "errors"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/golang/mock/gomock"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -198,8 +200,7 @@ func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
 		suite.Require().Len(event.Threads, 1)
 
 		exception := event.Exception[0]
-		suite.T().Log(exception)
-		suite.Equal("*errors.errorString", exception.Type)
+		suite.Equal("*errors.fundamental", exception.Type)
 		suite.Equal("error from pkg/errors", exception.Value)
 		suite.NotNil(exception.Stacktrace)
 
@@ -210,6 +211,41 @@ func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
 		suite.Nil(thread.Stacktrace)
 	})
 	logger.Error("error with exception", zap.Error(errors.New("error from pkg/errors")))
+}
+
+func (suite *SentryCoreSuite) TestWriteChainedErrors() {
+	core := NewSentryCore(suite.hub)
+	logger := zap.New(core)
+
+	suite.sendEventMock().Do(func(event *sentry.Event) {
+		suite.Equal("message with chained error", event.Message)
+
+		suite.Len(event.Exception, 3)
+		suite.Equal("*errors.errorString", event.Exception[0].Type)
+		suite.Equal("simple error", event.Exception[0].Value)
+		suite.Nil(event.Exception[0].Stacktrace)
+
+		suite.Equal("*errors.withStack", event.Exception[1].Type)
+		suite.Equal("simple error", event.Exception[1].Value)
+		suite.NotNil(event.Exception[1].Stacktrace)
+
+		suite.Equal("*fmt.wrapError", event.Exception[2].Type)
+		suite.Equal("wrap with fmt.Errorf: simple error", event.Exception[2].Value)
+		suite.NotNil(event.Exception[2].Stacktrace)
+
+		suite.Require().Len(event.Threads, 1)
+		thread := event.Threads[0]
+		suite.Equal(false, thread.Crashed)
+		suite.Equal(true, thread.Current)
+		suite.Equal("current", thread.ID)
+		suite.Nil(thread.Stacktrace)
+	})
+
+	err := stderrors.New("simple error")
+	err = errors.WithStack(err)
+	err = fmt.Errorf("wrap with fmt.Errorf: %w", err)
+
+	logger.Error("message with chained error", zap.Error(err))
 }
 
 func TestSentryCore(t *testing.T) {

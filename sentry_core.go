@@ -2,11 +2,9 @@ package logger
 
 import (
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/pkg/errors"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -107,33 +105,27 @@ func (s *SentryCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 		event.Message = ent.Message
 		event.Extra = data.Fields
 
-		var stacktrace *sentry.Stacktrace
-		if errField != nil {
-			stacktrace = sentry.ExtractStacktrace(errField)
-		}
-		if stacktrace == nil {
-			stacktrace = sentry.NewStacktrace()
-		}
-		filteredFrames := make([]sentry.Frame, 0, len(stacktrace.Frames))
-		for _, frame := range stacktrace.Frames {
-			if strings.HasPrefix(frame.Module, "go.uber.org/zap") ||
-				strings.HasPrefix(frame.Function, "go.uber.org/zap") {
-				break
+		for i := 0; i < 10 && errField != nil; i++ {
+			event.Exception = append(event.Exception, sentry.Exception{
+				Value:      errField.Error(),
+				Type:       reflect.TypeOf(errField).String(),
+				Stacktrace: extractStacktrace(errField),
+			})
+			switch wrapped := errField.(type) {
+			case interface{ Unwrap() error }:
+				errField = wrapped.Unwrap()
+			case interface{ Cause() error }:
+				errField = wrapped.Cause()
+			default:
+				errField = nil
 			}
-
-			filteredFrames = append(filteredFrames, frame)
 		}
-		stacktrace.Frames = filteredFrames
 
-		if errField != nil {
-			cause := errors.Cause(errField)
-
-			event.Exception = []sentry.Exception{{
-				Value:      cause.Error(),
-				Type:       reflect.TypeOf(cause).String(),
-				ThreadID:   "current",
-				Stacktrace: stacktrace,
-			}}
+		if len(event.Exception) != 0 {
+			if event.Exception[0].Stacktrace == nil {
+				event.Exception[0].Stacktrace = newStacktrace()
+			}
+			event.Exception[0].ThreadID = "current"
 			event.Threads = []sentry.Thread{{
 				ID:      "current",
 				Current: true,
@@ -142,10 +134,16 @@ func (s *SentryCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 		} else {
 			event.Threads = []sentry.Thread{{
 				ID:         "current",
-				Stacktrace: stacktrace,
+				Stacktrace: newStacktrace(),
 				Current:    true,
 				Crashed:    ent.Level >= zapcore.DPanicLevel,
 			}}
+		}
+
+		// event.Exception should be sorted such that the most recent error is last
+		for i := len(event.Exception)/2 - 1; i >= 0; i-- {
+			opp := len(event.Exception) - 1 - i
+			event.Exception[i], event.Exception[opp] = event.Exception[opp], event.Exception[i]
 		}
 
 		s.hub.CaptureEvent(event)
