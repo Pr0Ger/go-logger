@@ -25,7 +25,7 @@ func Example_simple() {
 	log.Error("and this message will attach stacktrace", zap.Error(errors.New("error from pkg/errors")))
 }
 
-func Example_breadcrumb_transport() {
+func Example_breadcrumbTransport() {
 	// This will not work without SENTRY_DSN environment variable
 	_ = sentry.Init(sentry.ClientOptions{
 		Transport: sentry.NewHTTPSyncTransport(),
@@ -55,7 +55,7 @@ func Example_breadcrumb_transport() {
 	// Either way it will contain full info about request in breadcrumb
 }
 
-func Example_web_server() {
+func Example_webServer() {
 	// This will not work without SENTRY_DSN environment variable
 	_ = sentry.Init(sentry.ClientOptions{
 		Transport: sentry.NewHTTPSyncTransport(),
