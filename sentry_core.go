@@ -31,6 +31,7 @@ type SentryCoreOption func(*SentryCore)
 func BreadcrumbLevel(level zapcore.Level) SentryCoreOption {
 	return func(w *SentryCore) {
 		w.BreadcrumbLevel = level
+		w.LevelEnabler = level
 		if level > w.EventLevel {
 			w.EventLevel = level
 		}
@@ -50,6 +51,7 @@ func NewSentryCore(hub *sentry.Hub, options ...SentryCoreOption) zapcore.Core {
 	}
 
 	core := &SentryCore{
+		LevelEnabler:    defaultBreadcrumbLevel,
 		hub:             hub,
 		scope:           hub.PushScope(),
 		BreadcrumbLevel: defaultBreadcrumbLevel,
