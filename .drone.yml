@@ -23,3 +23,17 @@ steps:
 volumes:
 - name: deps
   temp: {}
+
+---
+kind: pipeline
+name: update docs
+type: docker
+trigger:
+  event:
+  - tag
+steps:
+- name: pkg.go.dev
+  image: "alpine:latest"
+  commands:
+  - apk add curl jq
+  - curl -s https://proxy.golang.org/go.pr0ger.dev/logger/@v/${DRONE_TAG}.info | jq
