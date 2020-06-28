@@ -1,5 +1,15 @@
 ---
 kind: pipeline
+name: lint
+type: docker
+steps:
+- name: mod tidy
+  image: "pr0ger/baseimage:build.go-latest"
+  commands:
+  - go mod tidy -v
+  - git diff --exit-code
+---
+kind: pipeline
 name: tests 1.13
 type: docker
 steps:
