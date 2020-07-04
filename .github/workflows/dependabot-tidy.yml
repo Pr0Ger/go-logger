@@ -22,9 +22,10 @@ jobs:
     - name: commit
       run: |
         git add go.sum
-        git commit -m "go mod tidy"
+        git commit --amend --no-edit
 
     - name: Push changes
       uses: ad-m/github-push-action@master
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
+        force: true

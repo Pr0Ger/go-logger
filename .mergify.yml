@@ -7,4 +7,4 @@ pull_request_rules:
   - status-success=continuous-integration/drone/push
   actions:
     merge:
-      method: squash
+      method: rebase
