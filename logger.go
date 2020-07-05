@@ -7,9 +7,12 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/go-chi/chi/middleware"
+	gonanoid "github.com/matoous/go-nanoid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+const requestIDHeader = "X-Request-Id"
 
 // NewCore will create handy Core with sensible defaults:
 // - messages with error level and higher will go to stderr, everything else to stdout
@@ -57,10 +60,17 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
+			requestID := r.Header.Get(requestIDHeader)
+			if requestID == "" {
+				requestID, _ = gonanoid.Nanoid()
+			}
+			ctx = WithRequestID(ctx, requestID)
+
 			core := localCore
 			if client != nil {
 				hub := sentry.NewHub(client, sentry.NewScope())
 				core = NewSentryCoreWrapper(localCore, hub, options...)
+				hub.LastEventID()
 
 				ctx = WithHub(ctx, hub)
 			}

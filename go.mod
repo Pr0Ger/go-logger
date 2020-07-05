@@ -6,6 +6,7 @@ require (
 	github.com/getsentry/sentry-go v0.6.1
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/golang/mock v1.4.3
+	github.com/matoous/go-nanoid v1.4.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.6.1
 	go.uber.org/multierr v1.5.0

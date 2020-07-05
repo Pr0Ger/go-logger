@@ -13,6 +13,17 @@ type TestContextHelpersSuite struct {
 	suite.Suite
 }
 
+func (s TestContextHelpersSuite) TestRequestIDDefault() {
+	s.Equal("", RequestID(context.TODO()))
+}
+
+func (s TestContextHelpersSuite) TestRequestIDStoring() {
+	requestID := "request_id"
+
+	ctx := WithRequestID(context.Background(), requestID)
+	s.Equal(requestID, RequestID(ctx))
+}
+
 func (s TestContextHelpersSuite) TestHubDefault() {
 	s.Equal(sentry.CurrentHub(), Hub(context.TODO()))
 }

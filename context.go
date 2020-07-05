@@ -7,8 +7,21 @@ import (
 	"go.uber.org/zap"
 )
 
+type requestIDCtxKey struct{}
 type sentryHubCtxKey struct{}
 type zapLoggerCtxKey struct{}
+
+func RequestID(ctx context.Context) string {
+	if id, ok := ctx.Value(requestIDCtxKey{}).(string); ok {
+		return id
+	}
+	return ""
+}
+
+// WithRequestID returns a copy of provided context with added request id field
+func WithRequestID(ctx context.Context, requestID string) context.Context {
+	return context.WithValue(ctx, requestIDCtxKey{}, requestID)
+}
 
 // Hub returns the sentry.Hub associated with the context. If no hub is associated returns CurrentHub()
 func Hub(ctx context.Context) *sentry.Hub {
