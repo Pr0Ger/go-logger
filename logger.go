@@ -12,7 +12,10 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-const requestIDHeader = "X-Request-Id"
+const (
+	requestIDHeader     = "X-Request-Id"
+	sentryEventIDHeader = "X-Sentry-Id"
+)
 
 // NewCore will create handy Core with sensible defaults:
 // - messages with error level and higher will go to stderr, everything else to stdout
@@ -66,19 +69,26 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 			}
 			ctx = WithRequestID(ctx, requestID)
 
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			var loggerOptions []zap.Option
 			core := localCore
 			if client != nil {
 				hub := sentry.NewHub(client, sentry.NewScope())
 				core = NewSentryCoreWrapper(localCore, hub, options...)
-				hub.LastEventID()
+
+				loggerOptions = append(loggerOptions, zap.Hooks(func(entry zapcore.Entry) error {
+					if entry.Level >= core.(sentryCoreWrapper).SentryCore().EventLevel && hub.LastEventID() != "" {
+						ww.Header().Add(sentryEventIDHeader, string(hub.LastEventID()))
+					}
+					return nil
+				}))
 
 				ctx = WithHub(ctx, hub)
 			}
 
-			logger := zap.New(core)
+			logger := zap.New(core, loggerOptions...)
 			ctx = WithLogger(ctx, logger)
-
-			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
 			t1 := time.Now()
 			defer func() {
