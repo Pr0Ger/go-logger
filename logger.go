@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	"github.com/go-chi/chi/middleware"
 	gonanoid "github.com/matoous/go-nanoid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -69,7 +68,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 			}
 			ctx = WithRequestID(ctx, requestID)
 
-			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+			ww := NewWrapResponseWriter(w, r.ProtoMajor)
 
 			var loggerOptions []zap.Option
 			core := localCore
