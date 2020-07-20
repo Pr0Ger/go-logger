@@ -7,9 +7,11 @@ import (
 	"go.uber.org/zap"
 )
 
-type requestIDCtxKey struct{}
-type sentryHubCtxKey struct{}
-type zapLoggerCtxKey struct{}
+type (
+	requestIDCtxKey struct{}
+	sentryHubCtxKey struct{}
+	zapLoggerCtxKey struct{}
+)
 
 func RequestID(ctx context.Context) string {
 	if id, ok := ctx.Value(requestIDCtxKey{}).(string); ok {
