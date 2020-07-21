@@ -66,6 +66,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 			if requestID == "" {
 				requestID, _ = gonanoid.Nanoid()
 			}
+			w.Header().Add(requestIDHeader, requestID)
 			ctx = WithRequestID(ctx, requestID)
 
 			ww := NewWrapResponseWriter(w, r.ProtoMajor)
