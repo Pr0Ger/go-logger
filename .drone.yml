@@ -38,6 +38,8 @@ volumes:
 kind: pipeline
 name: update docs
 type: docker
+clone:
+  disable: true
 trigger:
   event:
   - tag
