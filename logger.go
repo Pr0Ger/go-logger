@@ -14,6 +14,8 @@ import (
 const (
 	requestIDHeader     = "X-Request-Id"
 	sentryEventIDHeader = "X-Sentry-Id"
+
+	sentryExtraRequestID = "request_id"
 )
 
 // NewCore will create handy Core with sensible defaults:
@@ -75,6 +77,10 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 			core := localCore
 			if client != nil {
 				hub := sentry.NewHub(client, sentry.NewScope())
+				hub.ConfigureScope(func(scope *sentry.Scope) {
+					scope.SetTag(sentryExtraRequestID, requestID)
+				})
+
 				core = NewSentryCoreWrapper(localCore, hub, options...)
 
 				loggerOptions = append(loggerOptions, zap.Hooks(func(entry zapcore.Entry) error {
