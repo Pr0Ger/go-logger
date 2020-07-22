@@ -9,7 +9,6 @@ import (
 
 type (
 	requestIDCtxKey struct{}
-	sentryHubCtxKey struct{}
 	zapLoggerCtxKey struct{}
 )
 
@@ -27,15 +26,15 @@ func WithRequestID(ctx context.Context, requestID string) context.Context {
 
 // Hub returns the sentry.Hub associated with the context. If no hub is associated returns CurrentHub()
 func Hub(ctx context.Context) *sentry.Hub {
-	if hub, ok := ctx.Value(sentryHubCtxKey{}).(*sentry.Hub); ok {
-		return hub
+	if sentry.HasHubOnContext(ctx) {
+		return sentry.GetHubFromContext(ctx)
 	}
 	return sentry.CurrentHub()
 }
 
 // WithHub returns a copy of provided context with added hub field
 func WithHub(ctx context.Context, hub *sentry.Hub) context.Context {
-	return context.WithValue(ctx, sentryHubCtxKey{}, hub)
+	return sentry.SetHubOnContext(ctx, hub)
 }
 
 // Ctx returns the in-context Logger for a request. If no logger is associated returns returns no-op logger
