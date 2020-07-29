@@ -21,6 +21,8 @@ jobs:
     
     - name: commit
       run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
         git add go.sum
         git commit --amend --no-edit
 
