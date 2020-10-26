@@ -120,7 +120,7 @@ func (suite *BreadcrumbTransportSuite) TestRoundTripFailure() {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1:21", nil)
 	suite.Require().NoError(err)
 
-	_, err = client.Do(req) // nolint:bodyclose
+	_, err = client.Do(req) //nolint:bodyclose
 	suite.Require().Error(err, "request should not be success")
 
 	suite.hub.CaptureMessage("test event")

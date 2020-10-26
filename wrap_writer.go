@@ -70,7 +70,7 @@ func (b *basicWriter) Write(buf []byte) (int, error) {
 	b.maybeWriteHeader()
 	n, err := b.ResponseWriter.Write(buf)
 	b.bytes += n
-	return n, err
+	return n, err //nolint:wrapcheck
 }
 
 func (b *basicWriter) Status() int {
@@ -119,7 +119,7 @@ func (f *httpFancyWriter) ReadFrom(r io.Reader) (int64, error) {
 	f.basicWriter.maybeWriteHeader()
 	n, err := rf.ReadFrom(r)
 	f.basicWriter.bytes += int(n)
-	return n, err
+	return n, err //nolint:wrapcheck
 }
 
 // http2FancyWriter is a HTTP2 writer that additionally satisfies
