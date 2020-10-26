@@ -45,5 +45,5 @@ func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 	Hub(req.Context()).AddBreadcrumb(&breadcrumb, nil)
 
-	return resp, err
+	return resp, err //nolint:wrapcheck
 }

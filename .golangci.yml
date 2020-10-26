@@ -2,27 +2,48 @@ linters:
   presets:
   - bugs
   - complexity
-  - format
   - performance
-  - style
   - unused
-  disable:
-  - depguard
-  - funlen
-  - godot
-  - gomnd
-  - gomodguard
-  - testpackage
-  - wsl
+  enable:
+  # format preset (-gofumpt)
+  - gofmt
+  - goimports
+  # style preset
+  - dogsled
+  - dupl
+  - gochecknoglobals
+  - gochecknoinits
+  - goconst
+  - gocritic
+  - godox
+  - golint
+  - goprintffuncname
+  - gosimple
+  - interfacer
+  - lll
+  - misspell
+  - nolintlint
+  - stylecheck
+  - tparallel
+  - unconvert
+  - whitespace
+  - wrapcheck
 linters-settings:
+  errorlint:
+    errorf: true
   dogsled:
     max-blank-identifiers: 3
     errcheck:
       exclude: .errcheck_excludes.txt
     lll:
       tab-width: 4
+  maligned:
+    suggest-new: true
+  nolintlint:
+    allow-leading-space: false
 issues:
   exclude-rules:
   - path: _test\.go
     linters:
-    - goerr113
+    - gomnd
+

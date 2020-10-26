@@ -111,7 +111,7 @@ func (s *SentryCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
 				Type:       reflect.TypeOf(errField).String(),
 				Stacktrace: extractStacktrace(errField),
 			})
-			switch wrapped := errField.(type) {
+			switch wrapped := errField.(type) { //nolint:errorlint
 			case interface{ Unwrap() error }:
 				errField = wrapped.Unwrap()
 			case interface{ Cause() error }:
