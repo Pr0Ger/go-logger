@@ -104,6 +104,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 					zap.Int("size", ww.BytesWritten()),
 					zap.String("method", r.Method),
 					zap.String("url", r.URL.String()),
+					zap.String("ip", r.RemoteAddr),
 				)
 			}()
 
