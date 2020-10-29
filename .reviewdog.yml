@@ -1,4 +1,0 @@
-runner:
-  golangci-lint:
-    cmd: golangci-lint run -v
-    level: error
