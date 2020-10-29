@@ -8,6 +8,13 @@ steps:
   commands:
   - go mod tidy -v
   - git diff --exit-code
+- name: lint
+  image: "golangci/golangci-lint:v1.32-alpine"
+  commands:
+  - go get github.com/golang/mock/mockgen@latest
+  - go generate -x
+  - golangci-lint run -v
+
 ---
 kind: pipeline
 name: tests 1.13
@@ -32,7 +39,7 @@ steps:
 
 volumes:
 - name: deps
-  temp: {}
+  temp: { }
 
 ---
 kind: pipeline
