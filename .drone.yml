@@ -12,8 +12,12 @@ steps:
   image: "golangci/golangci-lint:v1.32-alpine"
   commands:
   - go get github.com/golang/mock/mockgen@latest
+  - go get -u github.com/reviewdog/reviewdog/cmd/reviewdog@v0.11.0
   - go generate -x
-  - golangci-lint run -v
+  - golangci-lint run -v | reviewdog -reporter=github-check
+  environment:
+    REVIEWDOG_TOKEN:
+      from_secret: reviewdog_token
 
 ---
 kind: pipeline
