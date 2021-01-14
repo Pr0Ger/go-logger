@@ -80,6 +80,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 				hub.ConfigureScope(func(scope *sentry.Scope) {
 					scope.SetTag(sentryExtraRequestID, requestID)
 				})
+				hub.Scope().SetRequest(r)
 
 				core = NewSentryCoreWrapper(localCore, hub, options...)
 
