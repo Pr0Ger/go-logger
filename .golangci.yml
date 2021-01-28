@@ -19,11 +19,14 @@ linters:
   - golint
   - goprintffuncname
   - gosimple
+  - ifshort
   - interfacer
   - lll
   - misspell
   - nolintlint
+  - predeclared
   - stylecheck
+  - thelper
   - tparallel
   - unconvert
   - whitespace
