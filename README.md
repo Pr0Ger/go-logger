@@ -1,4 +1,5 @@
 # go-logger [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci]
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FPr0Ger%2Fgo-logger.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FPr0Ger%2Fgo-logger?ref=badge_shield)
 
 Library for intergrating [zap](https://pkg.go.dev/go.uber.org/zap) logger with [Sentry](https://sentry.io/). 
 
@@ -63,3 +64,7 @@ _ = server.ListenAndServe()
 [ci-img]: https://drone.pr0ger.dev/api/badges/Pr0Ger/go-logger/status.svg
 [ci]: https://drone.pr0ger.dev/Pr0Ger/go-logger
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FPr0Ger%2Fgo-logger.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FPr0Ger%2Fgo-logger?ref=badge_large)
