@@ -25,7 +25,7 @@ type SentryCore struct {
 
 type SentryCoreOption func(*SentryCore)
 
-// BreadcrumbLevel will set a minimum level of messages should be stored as breadcrumbs
+// BreadcrumbLevel will set a minimum level of messages should be stored as breadcrumbs.
 func BreadcrumbLevel(level zapcore.Level) SentryCoreOption {
 	return func(w *SentryCore) {
 		w.BreadcrumbLevel = level
@@ -36,7 +36,7 @@ func BreadcrumbLevel(level zapcore.Level) SentryCoreOption {
 	}
 }
 
-// EventLevel will set a minimum level of messages should be sent as events
+// EventLevel will set a minimum level of messages should be sent as events.
 func EventLevel(level zapcore.Level) SentryCoreOption {
 	return func(w *SentryCore) {
 		w.EventLevel = level

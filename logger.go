@@ -20,7 +20,7 @@ const (
 
 // NewCore will create handy Core with sensible defaults:
 // - messages with error level and higher will go to stderr, everything else to stdout
-// - use json encoder for production and console for development
+// - use json encoder for production and console for development.
 func NewCore(debug bool) zapcore.Core {
 	var encoder zapcore.Encoder
 	if debug {
@@ -42,7 +42,7 @@ func NewCore(debug bool) zapcore.Core {
 // RequestLogger is a middleware for injecting sentry.Hub and zap.Logger into request context.
 // If provided logger has sentryCoreWrapper as core injected logger will have core with same local core and
 // sentry core based on an empty Hub for each request so breadcrumbs list will be empty each time.
-// In other case logger.Core() will be used as a local core and sentry core will be created if sentry is initialized
+// In other case logger.Core() will be used as a local core and sentry core will be created if sentry is initialized.
 func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 	localCore := logger.Core()
 	client := sentry.CurrentHub().Client()

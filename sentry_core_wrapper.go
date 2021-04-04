@@ -6,11 +6,11 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-// sentryCoreWrapper is something like multiCore but only for two cores when second core is a Sentry core
+// sentryCoreWrapper is something like multiCore but only for two cores when second core is a Sentry core.
 type sentryCoreWrapper [2]zapcore.Core
 
 // NewSentryCoreWrapper creates a Core that duplicates log entries into
-// provided local Core and implicitly created Sentry core
+// provided local Core and implicitly created Sentry core.
 func NewSentryCoreWrapper(localCore zapcore.Core, hub *sentry.Hub, options ...SentryCoreOption) zapcore.Core {
 	return sentryCoreWrapper{
 		localCore,
