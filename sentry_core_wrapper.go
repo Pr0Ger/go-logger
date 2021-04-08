@@ -42,6 +42,7 @@ func (w sentryCoreWrapper) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *z
 }
 
 func (w sentryCoreWrapper) Write(ent zapcore.Entry, fields []zapcore.Field) error {
+	//nolint:wrapcheck
 	return multierr.Append(
 		w[0].Write(ent, fields),
 		w[1].Write(ent, fields),
@@ -49,6 +50,7 @@ func (w sentryCoreWrapper) Write(ent zapcore.Entry, fields []zapcore.Field) erro
 }
 
 func (w sentryCoreWrapper) Sync() error {
+	//nolint:wrapcheck
 	return multierr.Append(
 		w[0].Sync(),
 		w[1].Sync(),

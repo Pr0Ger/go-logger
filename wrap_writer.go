@@ -1,3 +1,4 @@
+//nolint:forcetypeassert,wrapcheck
 package logger
 
 import (

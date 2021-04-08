@@ -8,9 +8,9 @@ import (
 )
 
 type breadcrumbTransport struct {
-	Level sentry.Level
-
 	Transport http.RoundTripper
+
+	Level sentry.Level
 }
 
 func NewBreadcrumbTransport(level sentry.Level, transport http.RoundTripper) http.RoundTripper {
@@ -18,8 +18,8 @@ func NewBreadcrumbTransport(level sentry.Level, transport http.RoundTripper) htt
 		transport = http.DefaultTransport
 	}
 	return &breadcrumbTransport{
-		Level:     level,
 		Transport: transport,
+		Level:     level,
 	}
 }
 
