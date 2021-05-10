@@ -6,16 +6,12 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
-	gonanoid "github.com/matoous/go-nanoid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 const (
-	requestIDHeader     = "X-Request-Id"
 	sentryEventIDHeader = "X-Sentry-Id"
-
-	sentryExtraRequestID = "request_id"
 )
 
 // NewCore will create handy Core with sensible defaults:
@@ -64,22 +60,12 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 
-			requestID := r.Header.Get(requestIDHeader)
-			if requestID == "" {
-				requestID, _ = gonanoid.Nanoid()
-			}
-			w.Header().Add(requestIDHeader, requestID)
-			ctx = WithRequestID(ctx, requestID)
-
 			ww := NewWrapResponseWriter(w, r.ProtoMajor)
 
 			var loggerOptions []zap.Option
 			core := localCore
 			if client != nil {
 				hub := sentry.NewHub(client, sentry.NewScope())
-				hub.ConfigureScope(func(scope *sentry.Scope) {
-					scope.SetTag(sentryExtraRequestID, requestID)
-				})
 				hub.Scope().SetRequest(r)
 
 				core = NewSentryCoreWrapper(localCore, hub, options...)
