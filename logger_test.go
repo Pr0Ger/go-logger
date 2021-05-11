@@ -52,31 +52,6 @@ func (s *TestRequestLoggerSuite) wrapHandler(handler http.HandlerFunc) http.Hand
 	return RequestLogger(s.logger)(handler)
 }
 
-func (s *TestRequestLoggerSuite) TestShouldGenerateRequestID() {
-	requestID := "<not valid>"
-	wrappedHandler := s.wrapHandler(func(w http.ResponseWriter, r *http.Request) {
-		requestID = RequestID(r.Context())
-	})
-
-	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
-	w := httptest.NewRecorder()
-	wrappedHandler.ServeHTTP(w, req)
-
-	s.EqualValues(w.Header().Get("X-Request-Id"), requestID)
-}
-
-func (s *TestRequestLoggerSuite) TestShouldUserRequestIDFromHeader() {
-	wrappedHandler := s.wrapHandler(func(w http.ResponseWriter, r *http.Request) {
-		s.EqualValues(`request_id_in_header`, RequestID(r.Context()))
-	})
-
-	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
-	req.Header.Add("X-Request-Id", `request_id_in_header`)
-	w := httptest.NewRecorder()
-
-	wrappedHandler.ServeHTTP(w, req)
-}
-
 func (s *TestRequestLoggerSuite) TestLoggerShouldSendEventToSentryAndReturnEventID() {
 	s.logger = zap.New(NewSentryCoreWrapper(zapcore.NewNopCore(), sentry.CurrentHub()))
 
