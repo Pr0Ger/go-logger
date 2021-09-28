@@ -28,12 +28,31 @@ let LintPipeline =
             , image = "golangci/golangci-lint:v1.39-alpine"
             , commands =
                 Drone.StepType.commands
-                  [ "go get github.com/golang/mock/mockgen@latest"
-                  , "go generate -x"
-                  , "golangci-lint run -v"
-                  ]
+                  [ "go generate -x", "golangci-lint run -v" ]
             }
           ]
         }
 
-in  Drone.render [ LintPipeline ]
+let TestsPipeline =
+      λ(minorVersion : Natural) →
+        let minor = Natural/show minorVersion
+
+        in  Drone.Resource.Pipeline.Docker
+              Drone.Pipeline.Docker::{
+              , name = "tests 1.${minor}"
+              , steps =
+                [ Drone.Step.Docker::{
+                  , name = "build"
+                  , image = "pr0ger/baseimage:build.go-1.${minor}"
+                  , commands =
+                      Drone.StepType.commands [ "go generate -x", "go build" ]
+                  }
+                , Drone.Step.Docker::{
+                  , name = "test"
+                  , image = "pr0ger/baseimage:build.go-1.${minor}"
+                  , commands = Drone.StepType.commands [ "go test -v ./..." ]
+                  }
+                ]
+              }
+
+in  Drone.render [ LintPipeline, TestsPipeline 13 ]
