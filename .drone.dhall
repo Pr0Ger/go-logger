@@ -28,7 +28,10 @@ let LintPipeline =
             , image = "golangci/golangci-lint:v1.39-alpine"
             , commands =
                 Drone.StepType.commands
-                  [ "go generate -x", "golangci-lint run -v" ]
+                  [ "go get github.com/golang/mock/mockgen@latest"
+                  , "go generate -x"
+                  , "golangci-lint run -v"
+                  ]
             }
           ]
         }
@@ -45,7 +48,11 @@ let TestsPipeline =
                   , name = "build"
                   , image = "pr0ger/baseimage:build.go-1.${minor}"
                   , commands =
-                      Drone.StepType.commands [ "go generate -x", "go build" ]
+                      Drone.StepType.commands
+                        [ "go get github.com/golang/mock/mockgen@latest"
+                        , "go generate -x"
+                        , "go build"
+                        ]
                   }
                 , Drone.Step.Docker::{
                   , name = "test"
