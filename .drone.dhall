@@ -1,9 +1,5 @@
 let JSON = https://prelude.dhall-lang.org/JSON/package.dhall
 
-let List/map = https://prelude.dhall-lang.org/List/map
-
-let List/take = https://prelude.dhall-lang.org/List/take
-
 let Drone = https://dhall.pr0ger.dev/package.dhall
 
 let Enums = https://dhall.pr0ger.dev/enums.dhall
@@ -51,7 +47,7 @@ let TestsPipeline =
                       Drone.StepType.commands
                         [ "go get github.com/golang/mock/mockgen@latest"
                         , "go generate -x"
-                        , "go build"
+                        , "go build -v"
                         ]
                   }
                 , Drone.Step.Docker::{
@@ -62,4 +58,25 @@ let TestsPipeline =
                 ]
               }
 
-in  Drone.render [ LintPipeline, TestsPipeline 13 ]
+let UpdateDocs =
+      Drone.Resource.Pipeline.Docker
+        Drone.Pipeline.Docker::{
+        , name = "update docs"
+        , clone = Some { depth = None Natural, disable = Some True }
+        , trigger = Some Misc.Conditions::{
+          , event = Some (Misc.ConstraintOrEvent.events [ Enums.Event.Tag ])
+          }
+        , steps =
+          [ Drone.Step.Docker::{
+            , name = "pkg.go.dev"
+            , image = "alpine:latest"
+            , commands =
+                Drone.StepType.commands
+                  [ "apk add curl jq"
+                  , "curl -s https://proxy.golang.org/go.pr0ger.dev/logger/@v/\${DRONE_TAG}.info | jq"
+                  ]
+            }
+          ]
+        }
+
+in  Drone.render [ LintPipeline, TestsPipeline 13, UpdateDocs ]
