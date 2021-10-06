@@ -9,7 +9,7 @@ steps:
   - go mod tidy -v
   - git diff --exit-code
 - name: lint
-  image: "golangci/golangci-lint:v1.39-alpine"
+  image: "golangci/golangci-lint:v1.42-alpine"
   commands:
   - go get github.com/golang/mock/mockgen@latest
   - go generate -x
