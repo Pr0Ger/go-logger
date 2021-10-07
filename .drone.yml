@@ -24,7 +24,7 @@ steps:
   image: "pr0ger/baseimage:build.go-1.16"
   commands:
   - go generate -x
-  - go build
+  - go build -v
   volumes:
   - name: deps
     path: /go
@@ -49,7 +49,7 @@ steps:
   image: "pr0ger/baseimage:build.go-1.17"
   commands:
   - go generate -x
-  - go build
+  - go build -v
   volumes:
   - name: deps
     path: /go
