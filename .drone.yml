@@ -9,7 +9,7 @@ steps:
   - go mod tidy -v
   - git diff --exit-code
 - name: lint
-  image: "golangci/golangci-lint:v1.39-alpine"
+  image: "golangci/golangci-lint:v1.42-alpine"
   commands:
   - go get github.com/golang/mock/mockgen@latest
   - go generate -x
@@ -17,20 +17,46 @@ steps:
 
 ---
 kind: pipeline
-name: tests 1.13
+name: tests 1.16
 type: docker
 steps:
 - name: build
-  image: "pr0ger/baseimage:build.go-1.13"
+  image: "pr0ger/baseimage:build.go-1.16"
   commands:
-  - go get github.com/golang/mock/mockgen@latest
+  - go mod download
   - go generate -x
-  - go build
+  - go build -v
   volumes:
   - name: deps
     path: /go
 - name: test
-  image: "pr0ger/baseimage:build.go-1.13"
+  image: "pr0ger/baseimage:build.go-1.16"
+  commands:
+  - go test -v ./...
+  volumes:
+  - name: deps
+    path: /go
+
+volumes:
+- name: deps
+  temp: { }
+
+---
+kind: pipeline
+name: tests 1.17
+type: docker
+steps:
+- name: build
+  image: "pr0ger/baseimage:build.go-1.17"
+  commands:
+  - go mod download
+  - go generate -x
+  - go build -v
+  volumes:
+  - name: deps
+    path: /go
+- name: test
+  image: "pr0ger/baseimage:build.go-1.17"
   commands:
   - go test -v ./...
   volumes:
@@ -50,6 +76,9 @@ clone:
 trigger:
   event:
   - tag
+depends_on:
+- "tests 1.16"
+- "tests 1.17"
 steps:
 - name: pkg.go.dev
   image: "alpine:latest"

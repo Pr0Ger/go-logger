@@ -20,7 +20,8 @@ linters:
   - asciicheck
   - dogsled
   - dupl
-  - forcetypeassert # ?
+  - errname
+  - forcetypeassert
   - gochecknoglobals
   - gochecknoinits
   - goconst
@@ -39,13 +40,11 @@ linters:
   - unconvert
   - whitespace
   - wastedassign
-  # test
-  - tparallel
   disable:
   # bugs
-  - scopelint     # deprecated and superseded by exportloopref
+  - scopelint	 # deprecated and superseded by exportloopref
   # performance
-  - maligned      # deprecated and superseded by govet(fieldalignment)
+  - maligned	  # deprecated and superseded by govet(fieldalignment)
 linters-settings:
   dogsled:
     max-blank-identifiers: 3
@@ -63,9 +62,6 @@ linters-settings:
   gomoddirectives:
     replace-local: true
     retract-allow-no-explanation: false
-  govet:
-    enable:
-    - fieldalignment # instead of deprecated maligned
   lll:
     tab-width: 4
   nolintlint:
@@ -78,8 +74,3 @@ issues:
     linters:
     - goerr113
     - forcetypeassert
-
-  - path: _test\.go
-    text: "fieldalignment"
-    linters:
-    - govet
