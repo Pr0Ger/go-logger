@@ -23,6 +23,7 @@ steps:
 - name: build
   image: "pr0ger/baseimage:build.go-1.16"
   commands:
+  - go mod download
   - go generate -x
   - go build -v
   volumes:
@@ -48,6 +49,7 @@ steps:
 - name: build
   image: "pr0ger/baseimage:build.go-1.17"
   commands:
+  - go mod download
   - go generate -x
   - go build -v
   volumes:
