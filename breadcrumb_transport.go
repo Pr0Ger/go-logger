@@ -42,9 +42,11 @@ func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error
 	resp, err := b.Transport.RoundTrip(req.WithContext(span.Context()))
 
 	if err == nil {
+		span.Status = SpanStatus(resp.StatusCode)
 		breadcrumb.Data[BreadcrumbDataStatusCode] = resp.StatusCode
 		breadcrumb.Data[BreadcrumbDataReason] = resp.Status
 	} else {
+		span.Status = sentry.SpanStatusAborted
 		breadcrumb.Message = err.Error()
 	}
 

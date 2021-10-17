@@ -2,6 +2,7 @@ package logger
 
 import (
 	"math"
+	"net/http"
 	"strings"
 	"testing"
 
@@ -29,6 +30,33 @@ func TestSentryLevel(t *testing.T) {
 		//nolint:scopelint
 		t.Run(strings.Title(tt.arg.String()), func(t *testing.T) {
 			res := SentryLevel(tt.arg)
+			assert.Equal(t, tt.want, res, "SentryLevel() = %v, want %v", res, tt.want)
+		})
+	}
+}
+
+func TestSpanStatus(t *testing.T) {
+	tests := []struct {
+		arg  int
+		want sentry.SpanStatus
+	}{
+		{http.StatusOK, sentry.SpanStatusOK},
+		{http.StatusBadRequest, sentry.SpanStatusInvalidArgument},
+		{http.StatusUnauthorized, sentry.SpanStatusUnauthenticated},
+		{http.StatusForbidden, sentry.SpanStatusPermissionDenied},
+		{http.StatusNotFound, sentry.SpanStatusNotFound},
+		{http.StatusConflict, sentry.SpanStatusAlreadyExists},
+		{499, sentry.SpanStatusCanceled},
+		{http.StatusInternalServerError, sentry.SpanStatusInternalError},
+		{http.StatusNotImplemented, sentry.SpanStatusUnimplemented},
+		{http.StatusServiceUnavailable, sentry.SpanStatusUnavailable},
+		{http.StatusGatewayTimeout, sentry.SpanStatusDeadlineExceeded},
+	}
+
+	for _, tt := range tests {
+		//nolint:scopelint
+		t.Run(strings.Title(http.StatusText(tt.arg)), func(t *testing.T) {
+			res := SpanStatus(tt.arg)
 			assert.Equal(t, tt.want, res, "SentryLevel() = %v, want %v", res, tt.want)
 		})
 	}
