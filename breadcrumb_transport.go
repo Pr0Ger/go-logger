@@ -24,6 +24,11 @@ func NewBreadcrumbTransport(level sentry.Level, transport http.RoundTripper) htt
 }
 
 func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	span := sentry.StartSpan(req.Context(), req.URL.String(), sentry.ContinueFromRequest(req))
+	defer span.Finish()
+
+	req.Header.Add("sentry-trace", span.ToSentryTrace())
+
 	breadcrumb := sentry.Breadcrumb{
 		Data: map[string]interface{}{
 			BreadcrumbDataURL:    req.URL.String(),
@@ -34,16 +39,18 @@ func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error
 		Type:      BreadcrumbTypeHTTP,
 	}
 
-	resp, err := b.Transport.RoundTrip(req)
+	resp, err := b.Transport.RoundTrip(req.WithContext(span.Context()))
 
 	if err == nil {
+		span.Status = SpanStatus(resp.StatusCode)
 		breadcrumb.Data[BreadcrumbDataStatusCode] = resp.StatusCode
 		breadcrumb.Data[BreadcrumbDataReason] = resp.Status
 	} else {
+		span.Status = sentry.SpanStatusAborted
 		breadcrumb.Message = err.Error()
 	}
 
-	Hub(req.Context()).AddBreadcrumb(&breadcrumb, nil)
+	Hub(span.Context()).AddBreadcrumb(&breadcrumb, nil)
 
 	return resp, err //nolint:wrapcheck
 }

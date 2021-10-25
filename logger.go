@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -62,11 +63,20 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 			ww := NewWrapResponseWriter(w, r.ProtoMajor)
 
+			var span *sentry.Span
 			var loggerOptions []zap.Option
 			core := localCore
 			if client != nil {
 				hub := sentry.NewHub(client, sentry.NewScope())
 				hub.Scope().SetRequest(r)
+
+				ctx = WithHub(ctx, hub)
+
+				span = sentry.StartSpan(ctx, "http.handler",
+					sentry.TransactionName(fmt.Sprintf("%s %s", r.Method, r.URL.Path)),
+					sentry.ContinueFromRequest(r),
+				)
+				ctx = span.Context()
 
 				core = NewSentryCoreWrapper(localCore, hub, options...)
 
@@ -76,8 +86,6 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 					}
 					return nil
 				}))
-
-				ctx = WithHub(ctx, hub)
 			}
 
 			logger := zap.New(core, loggerOptions...)
@@ -85,6 +93,10 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 			t1 := time.Now()
 			defer func() {
+				if span != nil {
+					span.Status = SpanStatus(ww.Status())
+					span.Finish()
+				}
 				logger.Debug("-",
 					zap.Duration("duration", time.Since(t1)),
 					zap.Int("status", ww.Status()),

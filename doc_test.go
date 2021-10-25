@@ -58,7 +58,8 @@ func Example_breadcrumbTransport() {
 func Example_webServer() {
 	// This will not work without SENTRY_DSN environment variable
 	_ = sentry.Init(sentry.ClientOptions{
-		Transport: sentry.NewHTTPSyncTransport(),
+		Transport:        sentry.NewHTTPSyncTransport(),
+		TracesSampleRate: 1,
 	})
 
 	// Create core for logging to stdout/stderr
@@ -78,6 +79,22 @@ func Example_webServer() {
 		log := Ctx(r.Context())
 
 		log.Debug("some debug logs from request")
+
+		// Create an HTTP client with our transport
+		client := http.Client{
+			Transport: NewBreadcrumbTransport(sentry.LevelInfo, http.DefaultTransport),
+		}
+
+		// We need to pass current context to HTTP request so transport will know where to log
+		req, _ := http.NewRequestWithContext(r.Context(), http.MethodGet, "https://go.pr0ger.dev/logger", nil)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Warn("request failed", zap.Error(err))
+		} else {
+			log.Info(fmt.Sprintf("Response status: %s", resp.Status))
+			resp.Body.Close()
+		}
 
 		_, _ = w.Write([]byte("ok"))
 
