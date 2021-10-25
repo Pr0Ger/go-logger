@@ -24,6 +24,7 @@ func SentryLevel(level zapcore.Level) sentry.Level {
 	}
 }
 
+//nolint:cyclop
 func SpanStatus(httpCode int) sentry.SpanStatus {
 	if http.StatusOK <= httpCode && httpCode < 299 {
 		return sentry.SpanStatusOK
