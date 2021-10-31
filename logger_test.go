@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type TestRequestLoggerSuite struct {
+type TestLoggerSuite struct {
 	suite.Suite
 
 	ctrl          *gomock.Controller
@@ -21,7 +21,7 @@ type TestRequestLoggerSuite struct {
 	logger *zap.Logger
 }
 
-func (s *TestRequestLoggerSuite) SetupTest() {
+func (s *TestLoggerSuite) SetupTest() {
 	s.logger = zap.New(zapcore.NewNopCore())
 
 	s.ctrl = gomock.NewController(s.T())
@@ -44,15 +44,15 @@ func (s *TestRequestLoggerSuite) SetupTest() {
 	})
 }
 
-func (s *TestRequestLoggerSuite) TearDownTest() {
+func (s *TestLoggerSuite) TearDownTest() {
 	s.ctrl.Finish()
 }
 
-func (s *TestRequestLoggerSuite) wrapHandler(handler http.HandlerFunc) http.Handler {
+func (s *TestLoggerSuite) wrapHandler(handler http.HandlerFunc) http.Handler {
 	return RequestLogger(s.logger)(handler)
 }
 
-func (s *TestRequestLoggerSuite) TestLoggerShouldSendEventToSentryAndReturnEventID() {
+func (s *TestLoggerSuite) TestLoggerShouldSendEventToSentryAndReturnEventID() {
 	s.logger = zap.New(NewSentryCoreWrapper(zapcore.NewNopCore(), sentry.CurrentHub()))
 
 	eventID := sentry.EventID("<not valid>")
@@ -71,6 +71,28 @@ func (s *TestRequestLoggerSuite) TestLoggerShouldSendEventToSentryAndReturnEvent
 	s.EqualValues(w.Header().Get("X-Sentry-Id"), eventID)
 }
 
+func (s *TestLoggerSuite) TestForkedLoggerShouldOnlyLogRelatedEvents() {
+	s.logger = zap.New(NewSentryCoreWrapper(zapcore.NewNopCore(), sentry.CurrentHub()))
+
+	called := false
+	s.sendEventMock.Do(func(event *sentry.Event) {
+		called = true
+
+		s.Require().Len(event.Breadcrumbs, 1)
+		s.EqualValues("debug breadcrumb", event.Breadcrumbs[0].Message)
+
+		s.EqualValues("error message to create event in sentry", event.Message)
+	})
+
+	s.logger.Debug("should not be sent")
+
+	forkedLogger := ForkedLogger(s.logger)
+	forkedLogger.Debug("debug breadcrumb")
+	forkedLogger.Error("error message to create event in sentry")
+
+	s.True(called)
+}
+
 func TestRequestLogger(t *testing.T) {
-	suite.Run(t, new(TestRequestLoggerSuite))
+	suite.Run(t, new(TestLoggerSuite))
 }
