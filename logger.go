@@ -111,3 +111,29 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 		})
 	}
 }
+
+// ForkedLogger will return a new logger with isolated sentry.Hub.
+// No-op if logger is not using SentryCore.
+func ForkedLogger(logger *zap.Logger) *zap.Logger {
+	wrappedCore, ok := logger.Core().(sentryCoreWrapper)
+	if !ok {
+		// This logger is not using Sentry core.
+		return logger
+	}
+
+	localCore := wrappedCore.LocalCore()
+	sentryCore := wrappedCore.SentryCore()
+
+	var options []SentryCoreOption
+	if breadcrumbLevel := sentryCore.BreadcrumbLevel; breadcrumbLevel != defaultBreadcrumbLevel {
+		options = append(options, BreadcrumbLevel(breadcrumbLevel))
+	}
+	if eventLevel := sentryCore.EventLevel; eventLevel != defaultEventLevel {
+		options = append(options, EventLevel(eventLevel))
+	}
+
+	hub := sentry.NewHub(sentryCore.hub.Client(), sentry.NewScope())
+	core := NewSentryCoreWrapper(localCore, hub, options...)
+
+	return zap.New(core)
+}
