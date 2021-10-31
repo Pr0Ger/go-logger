@@ -1,6 +1,6 @@
 # go-logger [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci]
 
-Library for intergrating [zap](https://pkg.go.dev/go.uber.org/zap) logger with [Sentry](https://sentry.io/). 
+Library for integrating [zap](https://godocs.io/go.pr0ger.dev/logger) logger with [Sentry](https://sentry.io/). 
 
 ## Installation
 

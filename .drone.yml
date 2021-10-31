@@ -85,3 +85,8 @@ steps:
   commands:
   - apk add curl jq
   - curl -s https://proxy.golang.org/go.pr0ger.dev/logger/@v/${DRONE_TAG}.info | jq
+- name: godocs.io
+  image: "alpine:latest"
+  commands:
+  - apk add curl
+  - curl -X "POST" "https://godocs.io/-/refresh?import_path=go.pr0ger.dev%2Flogger&platform=linux%2Famd64"
