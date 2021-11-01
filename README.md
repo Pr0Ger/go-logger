@@ -1,6 +1,6 @@
 # go-logger [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci]
 
-Library for integrating [zap](https://godocs.io/go.pr0ger.dev/logger) logger with [Sentry](https://sentry.io/). 
+Library for integrating [zap](https://godocs.io/go.uber.org/zap) logger with [Sentry](https://sentry.io/). 
 
 ## Installation
 
@@ -58,8 +58,8 @@ _ = server.ListenAndServe()
 ![event](.github/img/event.png)
 
 
-[doc-img]: https://godoc.org/go.pr0ger.dev/logger?status.svg
-[doc]: https://pkg.go.dev/go.pr0ger.dev/logger
+[doc-img]: https://godocs.io/go.pr0ger.dev/logger?status.svg
+[doc]: https://godocs.io/go.pr0ger.dev/logger
 [ci-img]: https://drone.pr0ger.dev/api/badges/Pr0Ger/go-logger/status.svg
 [ci]: https://drone.pr0ger.dev/Pr0Ger/go-logger
 
