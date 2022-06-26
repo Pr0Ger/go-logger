@@ -81,6 +81,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 				core = NewSentryCoreWrapper(localCore, hub, options...)
 
 				loggerOptions = append(loggerOptions, zap.Hooks(func(entry zapcore.Entry) error {
+					//nolint: forcetypeassert
 					if entry.Level >= core.(sentryCoreWrapper).SentryCore().EventLevel && hub.LastEventID() != "" {
 						ww.Header().Add(sentryEventIDHeader, string(hub.LastEventID()))
 					}

@@ -3,7 +3,6 @@ package logger
 import (
 	"math"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/getsentry/sentry-go"
@@ -28,7 +27,7 @@ func TestSentryLevel(t *testing.T) {
 
 	for _, tt := range tests {
 		//nolint:scopelint
-		t.Run(strings.Title(tt.arg.String()), func(t *testing.T) {
+		t.Run(tt.arg.String(), func(t *testing.T) {
 			res := SentryLevel(tt.arg)
 			assert.Equal(t, tt.want, res, "SentryLevel() = %v, want %v", res, tt.want)
 		})
@@ -55,7 +54,7 @@ func TestSpanStatus(t *testing.T) {
 
 	for _, tt := range tests {
 		//nolint:scopelint
-		t.Run(strings.Title(http.StatusText(tt.arg)), func(t *testing.T) {
+		t.Run(http.StatusText(tt.arg), func(t *testing.T) {
 			res := SpanStatus(tt.arg)
 			assert.Equal(t, tt.want, res, "SentryLevel() = %v, want %v", res, tt.want)
 		})

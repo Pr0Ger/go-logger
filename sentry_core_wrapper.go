@@ -23,7 +23,7 @@ func (w sentryCoreWrapper) LocalCore() zapcore.Core {
 }
 
 func (w sentryCoreWrapper) SentryCore() *SentryCore {
-	return w[1].(*SentryCore)
+	return w[1].(*SentryCore) //nolint: forcetypeassert
 }
 
 func (w sentryCoreWrapper) Enabled(lvl zapcore.Level) bool {
