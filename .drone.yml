@@ -11,7 +11,7 @@ steps:
 - name: lint
   image: "golangci/golangci-lint:v1.42-alpine"
   commands:
-  - go get github.com/golang/mock/mockgen@latest
+  - go install github.com/golang/mock/mockgen@latest
   - go generate -x
   - golangci-lint run -v
 
