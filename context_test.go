@@ -13,33 +13,33 @@ type TestContextHelpersSuite struct {
 	suite.Suite
 }
 
-func (s TestContextHelpersSuite) TestRequestIDDefault() {
+func (s *TestContextHelpersSuite) TestRequestIDDefault() {
 	s.Equal("", RequestID(context.TODO()))
 }
 
-func (s TestContextHelpersSuite) TestRequestIDStoring() {
+func (s *TestContextHelpersSuite) TestRequestIDStoring() {
 	requestID := "request_id"
 
 	ctx := WithRequestID(context.Background(), requestID)
 	s.Equal(requestID, RequestID(ctx))
 }
 
-func (s TestContextHelpersSuite) TestHubDefault() {
+func (s *TestContextHelpersSuite) TestHubDefault() {
 	s.Equal(sentry.CurrentHub(), Hub(context.TODO()))
 }
 
-func (s TestContextHelpersSuite) TestHubStoring() {
+func (s *TestContextHelpersSuite) TestHubStoring() {
 	hub := sentry.CurrentHub().Clone()
 
 	ctx := WithHub(context.Background(), hub)
 	s.Equal(hub, Hub(ctx))
 }
 
-func (s TestContextHelpersSuite) TestLoggerDefault() {
+func (s *TestContextHelpersSuite) TestLoggerDefault() {
 	s.Equal(zap.NewNop(), Ctx(context.TODO()))
 }
 
-func (s TestContextHelpersSuite) TestLoggerStoring() {
+func (s *TestContextHelpersSuite) TestLoggerStoring() {
 	logger := zap.NewExample()
 
 	ctx := WithLogger(context.Background(), logger)
