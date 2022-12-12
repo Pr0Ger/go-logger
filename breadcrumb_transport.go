@@ -23,6 +23,7 @@ func NewBreadcrumbTransport(level sentry.Level, transport http.RoundTripper) htt
 	}
 }
 
+//nolint:contextcheck
 func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	span := sentry.StartSpan(req.Context(), req.URL.String(), sentry.ContinueFromRequest(req))
 	defer span.Finish()

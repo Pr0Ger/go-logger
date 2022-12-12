@@ -29,7 +29,6 @@ linters:
   - godox
   - goprintffuncname
   - gosimple
-  - ifshort
   - lll
   - makezero
   - nakedret
@@ -46,7 +45,11 @@ linters:
   # bugs
   - scopelint	 # deprecated and superseded by exportloopref
   # performance
-  - maligned	  # deprecated and superseded by govet(fieldalignment)
+  - maligned	 # deprecated and superseded by govet(fieldalignment)
+  # unused
+  - deadcode     # deprecated and superseded by unused
+  - structcheck  # deprecated and superseded by unused
+  - varcheck     # deprecated and superseded by unused
 linters-settings:
   dogsled:
     max-blank-identifiers: 3
@@ -82,3 +85,6 @@ issues:
     - dupl
     - goerr113
     - forcetypeassert
+  # excluded here to not mess up with the the code example in docs
+  - path: doc_test.go
+    text: 'G112'
