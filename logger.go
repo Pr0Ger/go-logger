@@ -59,7 +59,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context() //nolint:contextcheck
+			ctx := r.Context()
 
 			ww := NewWrapResponseWriter(w, r.ProtoMajor)
 
@@ -76,7 +76,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 					sentry.TransactionName(fmt.Sprintf("%s %s", r.Method, r.URL.Path)),
 					sentry.ContinueFromRequest(r),
 				)
-				ctx = span.Context()
+				ctx = span.Context() //nolint:contextcheck
 
 				core = NewSentryCoreWrapper(localCore, hub, options...)
 
@@ -89,8 +89,8 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 				}))
 			}
 
-			logger := zap.New(core, loggerOptions...)
-			ctx = WithLogger(ctx, logger)
+			requestLogger := zap.New(core, loggerOptions...)
+			ctx = WithLogger(ctx, requestLogger)
 
 			t1 := time.Now()
 			defer func() {
@@ -98,7 +98,8 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 					span.Status = SpanStatus(ww.Status())
 					span.Finish()
 				}
-				logger.Debug("-",
+				// fetching logger from context because it can be changed by WithExtraFields middleware
+				Ctx(ctx).Debug("-",
 					zap.Duration("duration", time.Since(t1)),
 					zap.Int("status", ww.Status()),
 					zap.Int("size", ww.BytesWritten()),
@@ -109,6 +110,21 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 			}()
 
 			next.ServeHTTP(ww, r.WithContext(ctx))
+		})
+	}
+}
+
+// WithExtraFields is a middleware for injecting extra field to the logger injected by RequestLogger middleware.
+func WithExtraFields(fieldsGenerator func(r *http.Request) []zap.Field) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fields := fieldsGenerator(r)
+
+			if loggerPointer, ok := r.Context().Value(zapLoggerCtxKey{}).(**zap.Logger); ok {
+				*loggerPointer = (*loggerPointer).With(fields...)
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }
