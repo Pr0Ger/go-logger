@@ -46,6 +46,9 @@ func (s *TestLoggerSuite) SetupTest() {
 
 func (s *TestLoggerSuite) TearDownTest() {
 	s.ctrl.Finish()
+
+	// reset sentry client to default
+	_ = sentry.Init(sentry.ClientOptions{})
 }
 
 func (s *TestLoggerSuite) wrapHandler(handler http.HandlerFunc) http.Handler {
@@ -69,6 +72,35 @@ func (s *TestLoggerSuite) TestLoggerShouldSendEventToSentryAndReturnEventID() {
 
 	wrappedHandler.ServeHTTP(w, req)
 	s.EqualValues(w.Header().Get("X-Sentry-Id"), eventID)
+}
+
+func (s *TestLoggerSuite) TestLoggerWithInjectedExtraFields() {
+	s.logger = zap.New(NewSentryCoreWrapper(zapcore.NewNopCore(), sentry.CurrentHub()))
+
+	handlerFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Ctx(r.Context()).Error("test error")
+	})
+
+	wrappedHandler := WithExtraFields(func(r *http.Request) []zap.Field {
+		return []zap.Field{
+			zap.String("key", r.URL.String()),
+		}
+	})(handlerFunc)
+	wrappedHandler = RequestLogger(s.logger)(wrappedHandler)
+
+	called := false
+	s.sendEventMock.Do(func(event *sentry.Event) {
+		called = true
+
+		s.EqualValues("test error", event.Message)
+		s.EqualValues("http://example.com/foo", event.Extra["key"])
+	})
+
+	req := httptest.NewRequest("GET", "http://example.com/foo", nil)
+	w := httptest.NewRecorder()
+
+	wrappedHandler.ServeHTTP(w, req)
+	s.True(called)
 }
 
 func (s *TestLoggerSuite) TestForkedLoggerShouldOnlyLogRelatedEvents() {

@@ -39,13 +39,13 @@ func WithHub(ctx context.Context, hub *sentry.Hub) context.Context {
 
 // Ctx returns the in-context Logger for a request. If no logger is associated returns no-op logger.
 func Ctx(ctx context.Context) *zap.Logger {
-	if entry, ok := ctx.Value(zapLoggerCtxKey{}).(*zap.Logger); ok {
-		return entry
+	if entry, ok := ctx.Value(zapLoggerCtxKey{}).(**zap.Logger); ok {
+		return *entry
 	}
 	return zap.NewNop()
 }
 
 // WithLogger returns a copy of provided context with added logger field.
 func WithLogger(ctx context.Context, logger *zap.Logger) context.Context {
-	return context.WithValue(ctx, zapLoggerCtxKey{}, logger)
+	return context.WithValue(ctx, zapLoggerCtxKey{}, &logger)
 }
