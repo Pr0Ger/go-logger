@@ -69,6 +69,50 @@ volumes:
 
 ---
 kind: pipeline
+name: tests 1.18
+type: docker
+steps:
+- name: build
+  image: "pr0ger/baseimage:build.go-1.18"
+  commands:
+  - go mod download
+  - go generate -x
+  - go build -v
+  volumes:
+  - name: deps
+    path: /go
+- name: test
+  image: "pr0ger/baseimage:build.go-1.18"
+  commands:
+  - go test -v ./...
+  volumes:
+  - name: deps
+    path: /go
+
+---
+kind: pipeline
+name: tests 1.19
+type: docker
+steps:
+- name: build
+  image: "pr0ger/baseimage:build.go-1.19"
+  commands:
+  - go mod download
+  - go generate -x
+  - go build -v
+  volumes:
+  - name: deps
+    path: /go
+- name: test
+  image: "pr0ger/baseimage:build.go-1.19"
+  commands:
+  - go test -v ./...
+  volumes:
+  - name: deps
+    path: /go
+
+---
+kind: pipeline
 name: update docs
 type: docker
 clone:
