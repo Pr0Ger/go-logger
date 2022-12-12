@@ -17,7 +17,7 @@ func SentryLevel(level zapcore.Level) sentry.Level {
 		return sentry.LevelWarning
 	case zapcore.ErrorLevel, zapcore.DPanicLevel:
 		return sentry.LevelError
-	case zapcore.PanicLevel, zapcore.FatalLevel:
+	case zapcore.PanicLevel, zapcore.FatalLevel, zapcore.InvalidLevel:
 		return sentry.LevelFatal
 	default:
 		return sentry.LevelDebug
