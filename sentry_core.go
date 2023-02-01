@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
@@ -125,39 +126,23 @@ func (s *SentryCore) captureEvent(ent zapcore.Entry, data *zapcore.MapObjectEnco
 	event.Message = ent.Message
 	event.Extra = data.Fields
 
-	for i := 0; i < 10 && errField != nil; i++ {
-		event.Exception = append(event.Exception, sentry.Exception{
-			Value:      errField.Error(),
-			Type:       reflect.TypeOf(errField).String(),
-			Stacktrace: extractStacktrace(errField),
-		})
-		switch wrapped := errField.(type) { //nolint:errorlint
-		case interface{ Unwrap() error }:
-			errField = wrapped.Unwrap()
-		case interface{ Cause() error }:
-			errField = wrapped.Cause()
-		default:
-			errField = nil
-		}
+	if errField != nil {
+		event.Exception = s.convertErrorToException(errField)
 	}
+
+	event.Threads = []sentry.Thread{{
+		ID:      "current",
+		Current: true,
+		Crashed: ent.Level >= zapcore.DPanicLevel,
+	}}
 
 	if len(event.Exception) != 0 {
 		if event.Exception[0].Stacktrace == nil {
 			event.Exception[0].Stacktrace = newStacktrace()
 		}
 		event.Exception[0].ThreadID = "current"
-		event.Threads = []sentry.Thread{{
-			ID:      "current",
-			Current: true,
-			Crashed: ent.Level >= zapcore.DPanicLevel,
-		}}
 	} else {
-		event.Threads = []sentry.Thread{{
-			ID:         "current",
-			Stacktrace: newStacktrace(),
-			Current:    true,
-			Crashed:    ent.Level >= zapcore.DPanicLevel,
-		}}
+		event.Threads[0].Stacktrace = newStacktrace()
 	}
 
 	// event.Exception should be sorted such that the most recent error is last
@@ -167,6 +152,41 @@ func (s *SentryCore) captureEvent(ent zapcore.Entry, data *zapcore.MapObjectEnco
 	}
 
 	s.hub.CaptureEvent(event)
+}
+
+func (s *SentryCore) convertErrorToException(errValue error) []sentry.Exception {
+	exceptions := make([]sentry.Exception, 0)
+	firstMeaningfulError := -1
+	for i := 0; i < 10 && errValue != nil; i++ {
+		errorType := reflect.TypeOf(errValue).String()
+		exceptions = append(exceptions, sentry.Exception{
+			Value:      errValue.Error(),
+			Type:       errorType,
+			Stacktrace: extractStacktrace(errValue),
+		})
+
+		if errorType != "*fmt.wrapError" && firstMeaningfulError == -1 {
+			firstMeaningfulError = i
+		}
+
+		switch wrapped := errValue.(type) { //nolint:errorlint
+		case interface{ Unwrap() error }:
+			errValue = wrapped.Unwrap()
+		case interface{ Cause() error }:
+			errValue = wrapped.Cause()
+		default:
+			errValue = nil
+		}
+	}
+
+	// If the first errors are wrapped errors, we want to show actual error type instead of *fmt.wrapError
+	if firstMeaningfulError != -1 {
+		for i := 0; i < firstMeaningfulError; i++ {
+			exceptions[i].Type = fmt.Sprintf("wrapped<%s>", exceptions[firstMeaningfulError].Type)
+		}
+	}
+
+	return exceptions
 }
 
 func (s *SentryCore) Sync() error {

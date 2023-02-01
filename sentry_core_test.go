@@ -229,7 +229,7 @@ func (suite *SentryCoreSuite) TestWriteChainedErrors() {
 		suite.Equal("simple error", event.Exception[1].Value)
 		suite.NotNil(event.Exception[1].Stacktrace)
 
-		suite.Equal("*fmt.wrapError", event.Exception[2].Type)
+		suite.Equal("wrapped<*errors.withStack>", event.Exception[2].Type)
 		suite.Equal("wrap with fmt.Errorf: simple error", event.Exception[2].Value)
 		suite.NotNil(event.Exception[2].Stacktrace)
 
@@ -246,6 +246,26 @@ func (suite *SentryCoreSuite) TestWriteChainedErrors() {
 	err = fmt.Errorf("wrap with fmt.Errorf: %w", err)
 
 	logger.Error("message with chained error", zap.Error(err))
+}
+
+func (suite *SentryCoreSuite) TestStrippingWrappedErrors() {
+	core := NewSentryCore(suite.hub).(*SentryCore)
+
+	err := stderrors.New("simple error")
+	err = fmt.Errorf("first wrap: %w", err)
+	err = fmt.Errorf("second wrap: %w", err)
+
+	exceptions := core.convertErrorToException(err)
+	suite.Len(exceptions, 3)
+
+	suite.Equal("wrapped<*errors.errorString>", exceptions[0].Type)
+	suite.Equal("second wrap: first wrap: simple error", exceptions[0].Value)
+
+	suite.Equal("wrapped<*errors.errorString>", exceptions[1].Type)
+	suite.Equal("first wrap: simple error", exceptions[1].Value)
+
+	suite.Equal("*errors.errorString", exceptions[2].Type)
+	suite.Equal("simple error", exceptions[2].Value)
 }
 
 func TestSentryCore(t *testing.T) {
