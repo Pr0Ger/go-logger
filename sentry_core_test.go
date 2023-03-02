@@ -83,6 +83,15 @@ func (suite *SentryCoreSuite) TestNew() {
 			suite.Equal(zapcore.PanicLevel, hub.BreadcrumbLevel)
 			suite.Equal(zapcore.PanicLevel, hub.EventLevel)
 		})
+
+		suite.Run("sentry tag map", func() {
+			tm := FieldTagMap{
+				UserTags: SentryUserMap{ID: "username"},
+			}
+			hub := NewSentryCore(suite.hub, TagMap(tm)).(*SentryCore)
+
+			suite.Equal(tm, hub.TagMap)
+		})
 	})
 }
 

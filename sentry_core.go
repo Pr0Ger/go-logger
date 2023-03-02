@@ -14,6 +14,24 @@ const (
 	defaultEventLevel      = zapcore.ErrorLevel
 )
 
+// SentryUserMap defines which zap field will match sentry.User struct field.
+type SentryUserMap struct {
+	ID        string
+	IPAddress string
+	Name      string
+	Username  string
+	Email     string
+	Segment   string
+}
+
+// FieldTagMap allows logger match zap fields with sentry fields.
+type FieldTagMap struct {
+	// UserTags maps field names which will be passed to sentry as User
+	UserTags SentryUserMap
+	// GenericTags contains field names which will be passed to sentry as Tags
+	GenericTags []string
+}
+
 type SentryCore struct {
 	zapcore.LevelEnabler
 
@@ -22,6 +40,8 @@ type SentryCore struct {
 
 	BreadcrumbLevel zapcore.Level
 	EventLevel      zapcore.Level
+
+	TagMap FieldTagMap
 }
 
 type SentryCoreOption func(*SentryCore)
@@ -41,6 +61,13 @@ func BreadcrumbLevel(level zapcore.Level) SentryCoreOption {
 func EventLevel(level zapcore.Level) SentryCoreOption {
 	return func(w *SentryCore) {
 		w.EventLevel = level
+	}
+}
+
+// TagMap will set map to match zap fields with sentry tags.
+func TagMap(tagMap FieldTagMap) SentryCoreOption {
+	return func(w *SentryCore) {
+		w.TagMap = tagMap
 	}
 }
 
@@ -71,6 +98,7 @@ func (s *SentryCore) With(fields []zapcore.Field) zapcore.Core {
 		scope:           s.hub.PushScope(),
 		BreadcrumbLevel: s.BreadcrumbLevel,
 		EventLevel:      s.EventLevel,
+		TagMap:          s.TagMap,
 	}
 
 	data := zapcore.NewMapObjectEncoder()
@@ -124,7 +152,7 @@ func (s *SentryCore) captureEvent(ent zapcore.Entry, data *zapcore.MapObjectEnco
 	event := sentry.NewEvent()
 	event.Level = SentryLevel(ent.Level)
 	event.Message = ent.Message
-	event.Extra = data.Fields
+	s.parseFieldsToEvent(event, data.Fields)
 
 	if errField != nil {
 		event.Exception = s.convertErrorToException(errField)
@@ -192,4 +220,38 @@ func (s *SentryCore) convertErrorToException(errValue error) []sentry.Exception 
 func (s *SentryCore) Sync() error {
 	s.hub.Flush(30 * time.Second)
 	return nil
+}
+
+func (s *SentryCore) parseFieldsToEvent(event *sentry.Event, data map[string]interface{}) {
+	event.User = s.prepareSentryUser(&data)
+	event.Tags = s.prepareSentryTags(&data)
+	event.Extra = data
+}
+
+func (s *SentryCore) prepareSentryUser(data *map[string]interface{}) sentry.User {
+	return sentry.User{
+		ID:        fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.ID)),
+		IPAddress: fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.IPAddress)),
+		Name:      fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.Name)),
+		Username:  fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.Username)),
+		Email:     fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.Email)),
+		Segment:   fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.Segment)),
+	}
+}
+
+func (s *SentryCore) prepareSentryTags(data *map[string]interface{}) map[string]string {
+	tags := make(map[string]string, 0)
+	for _, tagKey := range s.TagMap.GenericTags {
+		tags[tagKey] = fmt.Sprintf("%v", pop(data, tagKey))
+	}
+	return tags
+}
+
+func pop(fieldMap *map[string]interface{}, key string) interface{} {
+	val, ok := (*fieldMap)[key]
+	if ok {
+		delete(*fieldMap, key)
+		return val
+	}
+	return ""
 }

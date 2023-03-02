@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -48,13 +49,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 		localCore = wrappedCore.LocalCore()
 		sentryCore := wrappedCore.SentryCore()
 		client = sentryCore.hub.Client()
-
-		if breadcrumbLevel := sentryCore.BreadcrumbLevel; breadcrumbLevel != defaultBreadcrumbLevel {
-			options = append(options, BreadcrumbLevel(breadcrumbLevel))
-		}
-		if eventLevel := sentryCore.EventLevel; eventLevel != defaultEventLevel {
-			options = append(options, EventLevel(eventLevel))
-		}
+		options = prepareOptions(sentryCore)
 	}
 
 	return func(next http.Handler) http.Handler {
@@ -69,6 +64,11 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 			if client != nil {
 				hub := sentry.NewHub(client, sentry.NewScope())
 				hub.Scope().SetRequest(r)
+				hub.Scope().SetUser(
+					sentry.User{
+						IPAddress: strings.Split(r.RemoteAddr, ":")[0],
+					},
+				)
 
 				ctx = WithHub(ctx, hub)
 
@@ -140,17 +140,21 @@ func ForkedLogger(logger *zap.Logger) *zap.Logger {
 
 	localCore := wrappedCore.LocalCore()
 	sentryCore := wrappedCore.SentryCore()
-
-	var options []SentryCoreOption
-	if breadcrumbLevel := sentryCore.BreadcrumbLevel; breadcrumbLevel != defaultBreadcrumbLevel {
-		options = append(options, BreadcrumbLevel(breadcrumbLevel))
-	}
-	if eventLevel := sentryCore.EventLevel; eventLevel != defaultEventLevel {
-		options = append(options, EventLevel(eventLevel))
-	}
+	options := prepareOptions(sentryCore)
 
 	hub := sentry.NewHub(sentryCore.hub.Client(), sentry.NewScope())
 	core := NewSentryCoreWrapper(localCore, hub, options...)
 
 	return zap.New(core)
+}
+
+func prepareOptions(core *SentryCore) []SentryCoreOption {
+	var options []SentryCoreOption
+	if breadcrumbLevel := core.BreadcrumbLevel; breadcrumbLevel != defaultBreadcrumbLevel {
+		options = append(options, BreadcrumbLevel(breadcrumbLevel))
+	}
+	if eventLevel := core.EventLevel; eventLevel != defaultEventLevel {
+		options = append(options, EventLevel(eventLevel))
+	}
+	return options
 }
