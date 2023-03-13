@@ -17,80 +17,6 @@ steps:
 
 ---
 kind: pipeline
-name: tests 1.16
-type: docker
-steps:
-- name: build
-  image: "pr0ger/baseimage:build.go-1.16"
-  commands:
-  - go mod download
-  - go generate -x
-  - go build -v
-  volumes:
-  - name: deps
-    path: /go
-- name: test
-  image: "pr0ger/baseimage:build.go-1.16"
-  commands:
-  - go test -v ./...
-  volumes:
-  - name: deps
-    path: /go
-
-volumes:
-- name: deps
-  temp: { }
-
----
-kind: pipeline
-name: tests 1.17
-type: docker
-steps:
-- name: build
-  image: "pr0ger/baseimage:build.go-1.17"
-  commands:
-  - go mod download
-  - go generate -x
-  - go build -v
-  volumes:
-  - name: deps
-    path: /go
-- name: test
-  image: "pr0ger/baseimage:build.go-1.17"
-  commands:
-  - go test -v ./...
-  volumes:
-  - name: deps
-    path: /go
-
-volumes:
-- name: deps
-  temp: { }
-
----
-kind: pipeline
-name: tests 1.18
-type: docker
-steps:
-- name: build
-  image: "pr0ger/baseimage:build.go-1.18"
-  commands:
-  - go mod download
-  - go generate -x
-  - go build -v
-  volumes:
-  - name: deps
-    path: /go
-- name: test
-  image: "pr0ger/baseimage:build.go-1.18"
-  commands:
-  - go test -v ./...
-  volumes:
-  - name: deps
-    path: /go
-
----
-kind: pipeline
 name: tests 1.19
 type: docker
 steps:
@@ -113,6 +39,28 @@ steps:
 
 ---
 kind: pipeline
+name: tests 1.20
+type: docker
+steps:
+- name: build
+  image: "pr0ger/baseimage:build.go-1.20"
+  commands:
+  - go mod download
+  - go generate -x
+  - go build -v
+  volumes:
+  - name: deps
+    path: /go
+- name: test
+  image: "pr0ger/baseimage:build.go-1.20"
+  commands:
+  - go test -v ./...
+  volumes:
+  - name: deps
+    path: /go
+
+---
+kind: pipeline
 name: update docs
 type: docker
 clone:
@@ -121,8 +69,8 @@ trigger:
   event:
   - tag
 depends_on:
-- "tests 1.16"
-- "tests 1.17"
+- "tests 1.19"
+- "tests 1.20"
 steps:
 - name: pkg.go.dev
   image: "alpine:latest"
