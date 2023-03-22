@@ -3,6 +3,7 @@ package logger
 import (
 	stderrors "errors"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
@@ -84,13 +85,17 @@ func (suite *SentryCoreSuite) TestNew() {
 			suite.Equal(zapcore.PanicLevel, hub.EventLevel)
 		})
 
-		suite.Run("sentry tag map", func() {
-			tm := FieldTagMap{
-				UserTags: SentryUserMap{ID: "username"},
-			}
-			hub := NewSentryCore(suite.hub, TagMap(tm)).(*SentryCore)
+		suite.Run("sentry  user tag map", func() {
+			tm := SentryUserTagMap{ID: "username"}
+			hub := NewSentryCore(suite.hub, UserTags(tm)).(*SentryCore)
 
-			suite.Equal(tm, hub.TagMap)
+			suite.Equal(tm, hub.UserTags)
+		})
+
+		suite.Run("sentry generic tags", func() {
+			hub := NewSentryCore(suite.hub, GenericTags("t1", "t2")).(*SentryCore)
+
+			suite.Equal([]string{"t1", "t2"}, hub.GenericTags)
 		})
 	})
 }
@@ -275,6 +280,26 @@ func (suite *SentryCoreSuite) TestStrippingWrappedErrors() {
 
 	suite.Equal("*errors.errorString", exceptions[2].Type)
 	suite.Equal("simple error", exceptions[2].Value)
+}
+
+func (suite *SentryCoreSuite) TestParsingSentryTags() {
+	userTags := SentryUserTagMap{ID: "username", Username: "tag_wil_not_be_present"}
+	core := NewSentryCore(suite.hub, UserTags(userTags), GenericTags("t1", "t2")).(*SentryCore)
+	logger := zap.New(core)
+	testUser, testTagValue, testExtraValue := "test_user", 42, 69
+	suite.sendEventMock().Do(func(event *sentry.Event) {
+		suite.Equal(testUser, event.User.ID)
+		suite.Equal(strconv.Itoa(testTagValue), event.Tags["t2"])
+		suite.Len(event.Tags, 1)  // ["t1"]
+		suite.Len(event.Extra, 1) // ["t3"]
+		suite.Equal(testExtraValue, int(event.Extra["t3"].(int64)))
+	})
+	logger.Error(
+		"message with fields",
+		zap.String("username", testUser),
+		zap.Int("t2", testTagValue),
+		zap.Int("t3", testExtraValue),
+	)
 }
 
 func TestSentryCore(t *testing.T) {

@@ -14,22 +14,14 @@ const (
 	defaultEventLevel      = zapcore.ErrorLevel
 )
 
-// SentryUserMap defines which zap field will match sentry.User struct field.
-type SentryUserMap struct {
+// SentryUserTagMap maps field names which will be passed to sentry as User.
+type SentryUserTagMap struct {
 	ID        string
 	IPAddress string
 	Name      string
 	Username  string
 	Email     string
 	Segment   string
-}
-
-// FieldTagMap allows logger match zap fields with sentry fields.
-type FieldTagMap struct {
-	// UserTags maps field names which will be passed to sentry as User
-	UserTags SentryUserMap
-	// GenericTags contains field names which will be passed to sentry as Tags
-	GenericTags []string
 }
 
 type SentryCore struct {
@@ -41,7 +33,8 @@ type SentryCore struct {
 	BreadcrumbLevel zapcore.Level
 	EventLevel      zapcore.Level
 
-	TagMap FieldTagMap
+	UserTags    SentryUserTagMap
+	GenericTags []string
 }
 
 type SentryCoreOption func(*SentryCore)
@@ -64,10 +57,17 @@ func EventLevel(level zapcore.Level) SentryCoreOption {
 	}
 }
 
-// TagMap will set map to match zap fields with sentry tags.
-func TagMap(tagMap FieldTagMap) SentryCoreOption {
+// UserTags will set map to match zap fields with sentry user tags.
+func UserTags(tagMap SentryUserTagMap) SentryCoreOption {
 	return func(w *SentryCore) {
-		w.TagMap = tagMap
+		w.UserTags = tagMap
+	}
+}
+
+// GenericTags defines which zap fields should be passed as tags to Sentry.
+func GenericTags(tags ...string) SentryCoreOption {
+	return func(w *SentryCore) {
+		w.GenericTags = tags
 	}
 }
 
@@ -98,7 +98,8 @@ func (s *SentryCore) With(fields []zapcore.Field) zapcore.Core {
 		scope:           s.hub.PushScope(),
 		BreadcrumbLevel: s.BreadcrumbLevel,
 		EventLevel:      s.EventLevel,
-		TagMap:          s.TagMap,
+		UserTags:        s.UserTags,
+		GenericTags:     s.GenericTags,
 	}
 
 	data := zapcore.NewMapObjectEncoder()
@@ -230,19 +231,22 @@ func (s *SentryCore) parseFieldsToEvent(event *sentry.Event, data map[string]int
 
 func (s *SentryCore) prepareSentryUser(data *map[string]interface{}) sentry.User {
 	return sentry.User{
-		ID:        fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.ID)),
-		IPAddress: fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.IPAddress)),
-		Name:      fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.Name)),
-		Username:  fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.Username)),
-		Email:     fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.Email)),
-		Segment:   fmt.Sprintf("%v", pop(data, s.TagMap.UserTags.Segment)),
+		ID:        fmt.Sprintf("%v", pop(data, s.UserTags.ID)),
+		IPAddress: fmt.Sprintf("%v", pop(data, s.UserTags.IPAddress)),
+		Name:      fmt.Sprintf("%v", pop(data, s.UserTags.Name)),
+		Username:  fmt.Sprintf("%v", pop(data, s.UserTags.Username)),
+		Email:     fmt.Sprintf("%v", pop(data, s.UserTags.Email)),
+		Segment:   fmt.Sprintf("%v", pop(data, s.UserTags.Segment)),
 	}
 }
 
 func (s *SentryCore) prepareSentryTags(data *map[string]interface{}) map[string]string {
 	tags := make(map[string]string, 0)
-	for _, tagKey := range s.TagMap.GenericTags {
-		tags[tagKey] = fmt.Sprintf("%v", pop(data, tagKey))
+	for _, tagKey := range s.GenericTags {
+		val := fmt.Sprintf("%v", pop(data, tagKey))
+		if val != "" {
+			tags[tagKey] = val
+		}
 	}
 	return tags
 }
