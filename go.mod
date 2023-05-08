@@ -3,7 +3,7 @@ module go.pr0ger.dev/logger
 go 1.19
 
 require (
-	github.com/getsentry/sentry-go v0.20.0
+	github.com/getsentry/sentry-go v0.21.0
 	github.com/golang/mock v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.2
