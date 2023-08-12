@@ -73,7 +73,7 @@ func RequestLogger(logger *zap.Logger) func(next http.Handler) http.Handler {
 				ctx = WithHub(ctx, hub)
 
 				span = sentry.StartSpan(ctx, "http.handler",
-					sentry.TransactionName(fmt.Sprintf("%s %s", r.Method, r.URL.Path)),
+					sentry.WithTransactionName(fmt.Sprintf("%s %s", r.Method, r.URL.Path)),
 					sentry.ContinueFromRequest(r),
 				)
 				ctx = span.Context() //nolint:contextcheck
