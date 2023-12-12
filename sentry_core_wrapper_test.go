@@ -53,7 +53,7 @@ func (s *SentryCoreWrapperSuite) TestCoreFunctions() {
 	s.Run("Enabled", func() {
 		localCore.EXPECT().Enabled(gomock.Any()).Return(true)
 
-		s.Equal(true, wrappedCore.Enabled(zapcore.InfoLevel))
+		s.True(wrappedCore.Enabled(zapcore.InfoLevel))
 	})
 
 	s.Run("With", func() {
@@ -78,12 +78,12 @@ func (s *SentryCoreWrapperSuite) TestCoreFunctions() {
 	s.Run("Write", func() {
 		localCore.EXPECT().Write(gomock.Eq(testEntry), gomock.Eq(fields)).Return(nil)
 
-		s.NoError(wrappedCore.Write(testEntry, fields))
+		s.Require().NoError(wrappedCore.Write(testEntry, fields))
 	})
 
 	s.Run("Sync", func() {
 		localCore.EXPECT().Sync().Return(nil)
-		s.NoError(wrappedCore.Sync())
+		s.Require().NoError(wrappedCore.Sync())
 	})
 }
 

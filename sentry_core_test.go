@@ -45,7 +45,7 @@ func (suite *SentryCoreSuite) SetupTest() {
 		MinTimes(0)
 
 	client, err := sentry.NewClient(sentry.ClientOptions{Transport: transportMock})
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.hub = sentry.NewHub(client, sentry.NewScope())
 }
 
@@ -105,9 +105,9 @@ func (suite *SentryCoreSuite) TestWriteLevelStoreBreadcrumbMessage() {
 		suite.Require().Len(event.Breadcrumbs, 1, "event should have one breadcrumb")
 
 		breadcrumb := event.Breadcrumbs[0]
-		suite.Assert().Equal(BreadcrumbTypeDefault, breadcrumb.Type)
-		suite.Assert().Equal(sentry.LevelDebug, breadcrumb.Level)
-		suite.Assert().Equal("test", breadcrumb.Message)
+		suite.Equal(BreadcrumbTypeDefault, breadcrumb.Type)
+		suite.Equal(sentry.LevelDebug, breadcrumb.Level)
+		suite.Equal("test", breadcrumb.Message)
 	})
 
 	core := NewSentryCore(suite.hub)
@@ -121,7 +121,7 @@ func (suite *SentryCoreSuite) TestWriteLevelStoreBreadcrumbMessage() {
 
 func (suite *SentryCoreSuite) TestWriteLevelSkipTooVerboseMessages() {
 	suite.sendEventMock().Do(func(event *sentry.Event) {
-		suite.Require().Len(event.Breadcrumbs, 0, "event should not have breadcrumbs")
+		suite.Require().Empty(event.Breadcrumbs, "event should not have breadcrumbs")
 	})
 
 	core := NewSentryCore(suite.hub, BreadcrumbLevel(zap.InfoLevel))
@@ -144,7 +144,7 @@ func (suite *SentryCoreSuite) TestWriteLevelFieldStoreExtraTags() {
 		suite.Require().Len(event.Breadcrumbs, 2, "event should have 2 breadcrumbs")
 
 		suite.Equal("event without extra tags", event.Breadcrumbs[0].Message)
-		suite.Len(event.Breadcrumbs[0].Data, 0)
+		suite.Empty(event.Breadcrumbs[0].Data)
 
 		suite.Equal("event with extra tag", event.Breadcrumbs[1].Message)
 		suite.Require().Len(event.Breadcrumbs[1].Data, 1)
@@ -180,12 +180,12 @@ func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
 	suite.sendEventMock().Do(func(event *sentry.Event) {
 		suite.Equal("test message with default stacktrace", event.Message)
 
-		suite.Len(event.Exception, 0)
+		suite.Empty(event.Exception)
 
 		suite.Require().Len(event.Threads, 1)
 		thread := event.Threads[0]
-		suite.Equal(false, thread.Crashed)
-		suite.Equal(true, thread.Current)
+		suite.False(thread.Crashed)
+		suite.True(thread.Current)
 		suite.Equal("current", thread.ID)
 		suite.NotNil(thread.Stacktrace)
 	})
@@ -194,12 +194,12 @@ func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
 	suite.sendEventMock().Do(func(event *sentry.Event) {
 		suite.Equal("message from panic", event.Message)
 
-		suite.Len(event.Exception, 0)
+		suite.Empty(event.Exception)
 
 		suite.Require().Len(event.Threads, 1)
 		thread := event.Threads[0]
-		suite.Equal(true, thread.Crashed)
-		suite.Equal(true, thread.Current)
+		suite.True(thread.Crashed)
+		suite.True(thread.Current)
 		suite.Equal("current", thread.ID)
 		suite.NotNil(thread.Stacktrace)
 	})
@@ -219,8 +219,8 @@ func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
 		suite.NotNil(exception.Stacktrace)
 
 		thread := event.Threads[0]
-		suite.Equal(false, thread.Crashed)
-		suite.Equal(true, thread.Current)
+		suite.False(thread.Crashed)
+		suite.True(thread.Current)
 		suite.Equal(exception.ThreadID, thread.ID)
 		suite.Nil(thread.Stacktrace)
 	})
@@ -249,8 +249,8 @@ func (suite *SentryCoreSuite) TestWriteChainedErrors() {
 
 		suite.Require().Len(event.Threads, 1)
 		thread := event.Threads[0]
-		suite.Equal(false, thread.Crashed)
-		suite.Equal(true, thread.Current)
+		suite.False(thread.Crashed)
+		suite.True(thread.Current)
 		suite.Equal("current", thread.ID)
 		suite.Nil(thread.Stacktrace)
 	})

@@ -50,7 +50,7 @@ func (suite *BreadcrumbTransportSuite) SetupTest() {
 		MinTimes(0)
 
 	client, err := sentry.NewClient(sentry.ClientOptions{Transport: transportMock})
-	suite.NoError(err)
+	suite.Require().NoError(err)
 	suite.hub = sentry.NewHub(client, sentry.NewScope())
 }
 
@@ -70,7 +70,7 @@ func (suite *BreadcrumbTransportSuite) TestRoundTripSuccess() {
 		suite.Require().Len(event.Breadcrumbs, 1, "event should have one breadcrumb")
 
 		breadcrumb := event.Breadcrumbs[0]
-		suite.Assert().Equal(BreadcrumbTypeHTTP, breadcrumb.Type, "breadcrumb should have http type")
+		suite.Equal(BreadcrumbTypeHTTP, breadcrumb.Type, "breadcrumb should have http type")
 
 		expectedData := map[string]interface{}{
 			BreadcrumbDataMethod:     "GET",
@@ -78,7 +78,7 @@ func (suite *BreadcrumbTransportSuite) TestRoundTripSuccess() {
 			BreadcrumbDataStatusCode: 204,
 			BreadcrumbDataURL:        suite.ts.URL,
 		}
-		suite.Assert().Equal(expectedData, breadcrumb.Data, "breadcrumb should have data about http request")
+		suite.Equal(expectedData, breadcrumb.Data, "breadcrumb should have data about http request")
 	}).MinTimes(1)
 
 	client := http.Client{
@@ -102,14 +102,14 @@ func (suite *BreadcrumbTransportSuite) TestRoundTripFailure() {
 		suite.Require().Len(event.Breadcrumbs, 1, "event should have one breadcrumb")
 
 		breadcrumb := event.Breadcrumbs[0]
-		suite.Assert().Equal(BreadcrumbTypeHTTP, breadcrumb.Type, "breadcrumb should have http type")
-		suite.Assert().Equal("dial tcp 127.0.0.1:21: connect: connection refused", breadcrumb.Message)
+		suite.Equal(BreadcrumbTypeHTTP, breadcrumb.Type, "breadcrumb should have http type")
+		suite.Equal("dial tcp 127.0.0.1:21: connect: connection refused", breadcrumb.Message)
 
 		expectedData := map[string]interface{}{
 			BreadcrumbDataMethod: "GET",
 			BreadcrumbDataURL:    "http://127.0.0.1:21",
 		}
-		suite.Assert().Equal(expectedData, breadcrumb.Data, "breadcrumb should have data about http request")
+		suite.Equal(expectedData, breadcrumb.Data, "breadcrumb should have data about http request")
 	}).MinTimes(1)
 
 	client := http.Client{

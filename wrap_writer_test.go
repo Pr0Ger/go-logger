@@ -29,7 +29,7 @@ func (s *WrapWriterSuite) TestBasicWrapperReturnsCodeAndBodyLength() {
 	f.WriteHeader(http.StatusCreated)
 
 	_, err := f.Write([]byte{0x00, 0x01})
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	s.Equal(http.StatusCreated, f.Status())
 	s.EqualValues(2, f.BytesWritten())
@@ -39,7 +39,7 @@ func (s *WrapWriterSuite) TestBasicWrapperHaveDefaultStatusCode() {
 	f := &basicWriter{ResponseWriter: httptest.NewRecorder()}
 
 	_, err := f.Write([]byte{0x00, 0x01})
-	s.NoError(err)
+	s.Require().NoError(err)
 
 	s.Equal(http.StatusOK, f.Status())
 }
