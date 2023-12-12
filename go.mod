@@ -1,6 +1,6 @@
 module go.pr0ger.dev/logger
 
-go 1.19
+go 1.20
 
 require (
 	github.com/getsentry/sentry-go v0.25.0
