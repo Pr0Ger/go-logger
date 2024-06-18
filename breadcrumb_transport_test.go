@@ -24,7 +24,7 @@ type BreadcrumbTransportSuite struct {
 }
 
 func (suite *BreadcrumbTransportSuite) SetupSuite() {
-	suite.ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	suite.ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 }

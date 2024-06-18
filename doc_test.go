@@ -2,7 +2,6 @@ package logger
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/getsentry/sentry-go"
@@ -50,7 +49,7 @@ func Example_breadcrumbTransport() {
 	defer resp.Body.Close()
 
 	// Or just log response
-	sentry.CaptureMessage(fmt.Sprintf("Response status: %s", resp.Status))
+	sentry.CaptureMessage("Response status: " + resp.Status)
 
 	// Either way it will contain full info about request in breadcrumb
 }
@@ -92,7 +91,7 @@ func Example_webServer() {
 		if err != nil {
 			log.Warn("request failed", zap.Error(err))
 		} else {
-			log.Info(fmt.Sprintf("Response status: %s", resp.Status))
+			log.Info("Response status: " + resp.Status)
 			resp.Body.Close()
 		}
 

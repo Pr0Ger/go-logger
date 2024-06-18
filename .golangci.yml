@@ -18,6 +18,7 @@ linters:
   - gomoddirectives
   # style preset
   - asciicheck
+  - canonicalheader
   - containedctx
   - dogsled
   - dupl
@@ -43,20 +44,14 @@ linters:
   - unconvert
   - whitespace
   - wastedassign
-  disable:
-  # bugs
-  - scopelint	 # deprecated and superseded by exportloopref
-  # performance
-  - maligned	 # deprecated and superseded by govet(fieldalignment)
-  # unused
-  - deadcode     # deprecated and superseded by unused
-  - structcheck  # deprecated and superseded by unused
-  - varcheck     # deprecated and superseded by unused
 linters-settings:
   dogsled:
     max-blank-identifiers: 3
   errcheck:
-    exclude: .errcheck_excludes.txt
+    exclude-functions:
+    - (net/http.ResponseWriter).Write
+    - github.com/go-chi/render.Render
+    - github.com/go-chi/render.RenderList
   errorlint:
     errorf: true
   funlen:
@@ -76,8 +71,6 @@ linters-settings:
     retract-allow-no-explanation: false
   lll:
     tab-width: 4
-  nolintlint:
-    allow-leading-space: false
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

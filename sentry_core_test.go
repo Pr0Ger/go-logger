@@ -255,7 +255,7 @@ func (suite *SentryCoreSuite) TestWriteChainedErrors() {
 		suite.Nil(thread.Stacktrace)
 	})
 
-	err := stderrors.New("simple error")
+	err := stderrors.New("simple error") //nolint:err113
 	err = errors.WithStack(err)
 	err = fmt.Errorf("wrap with fmt.Errorf: %w", err)
 
@@ -265,7 +265,7 @@ func (suite *SentryCoreSuite) TestWriteChainedErrors() {
 func (suite *SentryCoreSuite) TestStrippingWrappedErrors() {
 	core := NewSentryCore(suite.hub).(*SentryCore)
 
-	err := stderrors.New("simple error")
+	err := stderrors.New("simple error") //nolint:err113
 	err = fmt.Errorf("first wrap: %w", err)
 	err = fmt.Errorf("second wrap: %w", err)
 

@@ -28,6 +28,7 @@ func (b breadcrumbTransport) RoundTrip(req *http.Request) (*http.Response, error
 	span := sentry.StartSpan(req.Context(), req.URL.String(), sentry.ContinueFromRequest(req))
 	defer span.Finish()
 
+	//nolint:canonicalheader
 	req.Header.Add("sentry-trace", span.ToSentryTrace())
 
 	breadcrumb := sentry.Breadcrumb{

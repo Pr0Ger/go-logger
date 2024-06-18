@@ -63,7 +63,7 @@ func (s *TestLoggerSuite) TestLoggerShouldSendEventToSentryAndReturnEventID() {
 		eventID = event.EventID
 	})
 
-	wrappedHandler := s.wrapHandler(func(w http.ResponseWriter, r *http.Request) {
+	wrappedHandler := s.wrapHandler(func(_ http.ResponseWriter, r *http.Request) {
 		Ctx(r.Context()).Error("test error")
 	})
 
@@ -77,7 +77,7 @@ func (s *TestLoggerSuite) TestLoggerShouldSendEventToSentryAndReturnEventID() {
 func (s *TestLoggerSuite) TestLoggerWithInjectedExtraFields() {
 	s.logger = zap.New(NewSentryCoreWrapper(zapcore.NewNopCore(), sentry.CurrentHub()))
 
-	handlerFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handlerFunc := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		Ctx(r.Context()).Error("test error")
 	})
 
