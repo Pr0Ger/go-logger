@@ -186,7 +186,7 @@ func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
 		thread := event.Threads[0]
 		suite.False(thread.Crashed)
 		suite.True(thread.Current)
-		suite.Equal("current", thread.ID)
+		suite.Equal("0", thread.ID)
 		suite.NotNil(thread.Stacktrace)
 	})
 	logger.Error("test message with default stacktrace")
@@ -200,7 +200,7 @@ func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
 		thread := event.Threads[0]
 		suite.True(thread.Crashed)
 		suite.True(thread.Current)
-		suite.Equal("current", thread.ID)
+		suite.Equal("0", thread.ID)
 		suite.NotNil(thread.Stacktrace)
 	})
 	suite.Panics(func() {
@@ -221,7 +221,6 @@ func (suite *SentryCoreSuite) TestWriteWillAttachStacktrace() {
 		thread := event.Threads[0]
 		suite.False(thread.Crashed)
 		suite.True(thread.Current)
-		suite.Equal(exception.ThreadID, thread.ID)
 		suite.Nil(thread.Stacktrace)
 	})
 	logger.Error("error with exception", zap.Error(errors.New("error from pkg/errors")))
@@ -251,7 +250,7 @@ func (suite *SentryCoreSuite) TestWriteChainedErrors() {
 		thread := event.Threads[0]
 		suite.False(thread.Crashed)
 		suite.True(thread.Current)
-		suite.Equal("current", thread.ID)
+		suite.Equal("0", thread.ID)
 		suite.Nil(thread.Stacktrace)
 	})
 

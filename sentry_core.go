@@ -160,7 +160,7 @@ func (s *SentryCore) captureEvent(ent zapcore.Entry, data *zapcore.MapObjectEnco
 	}
 
 	event.Threads = []sentry.Thread{{
-		ID:      "current",
+		ID:      "0",
 		Current: true,
 		Crashed: ent.Level >= zapcore.DPanicLevel,
 	}}
@@ -169,7 +169,7 @@ func (s *SentryCore) captureEvent(ent zapcore.Entry, data *zapcore.MapObjectEnco
 		if event.Exception[0].Stacktrace == nil {
 			event.Exception[0].Stacktrace = newStacktrace()
 		}
-		event.Exception[0].ThreadID = "current"
+		event.Exception[0].ThreadID = 0
 	} else {
 		event.Threads[0].Stacktrace = newStacktrace()
 	}
